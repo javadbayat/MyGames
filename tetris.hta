@@ -1133,6 +1133,9 @@ function enablePFRotation(fEnable)
 {
     tblPlayingField.filters[1].Enabled = fEnable;
     
+    tblPlayingField.parentElement.width = tblPlayingField.offsetWidth;
+    tblPlayingField.parentElement.height = tblPlayingField.offsetHeight;
+    
     document.mainForm.txtPFRotationAngle.disabled = !fEnable;
     pfRotation = fEnable ? Number(document.mainForm.txtPFRotationAngle.value) : NaN;
 }
