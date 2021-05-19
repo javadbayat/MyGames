@@ -1,0 +1,1265 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+<title>Tetris</title>
+<meta name="author" content="Javad Bayat">
+<meta http-equiv="content-type" content="text/html; charset = UTF-8">
+<meta http-equiv="MSThemeCompatible" content="Yes">
+<hta:application applicationname="Tetris" version="1.0" contextmenu="no" windowstate="maximize" singleinstance="no" />
+
+<style type="text/css">
+v\:* {
+    behavior: url(#default#VML);
+    display: inline-block;
+}
+
+#idPlayingField {
+    border: 3px double olive;
+    border-collapse: collapse;
+    font-size: 1px;
+    filter: 
+        progid:DXImageTransform.Microsoft.BasicImage(grayScale=1, enabled=false)
+        progid:DXImageTransform.Microsoft.Matrix(enabled=false, SizingMethod='auto expand');
+}
+
+button, #idStayForeverFeature {
+    margin: 3px;
+}
+
+.PieceShape {
+    filter: progid:DXImageTransform.Microsoft.BasicImage(grayScale=1, enabled=false);
+}
+
+#idGameControls {
+    width: 50%;
+}
+
+#idGameControls button {
+    zoom: 150%;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: red;
+}
+
+#idPFRotationAngle {
+    width: 45px;
+    margin-left: 35px;
+}
+</style>
+
+<script language="javascript">
+var score = 0, lines = 0, level = 1, time = 0;
+var pfWidth = 10, pfHeight = 20;
+var spScore, spLines, spLevel, spTime;
+var tblPlayingField, spNextPiece;
+var currentPiece = null, nextPiece = null;
+var mainInterval = 0, timerInterval = 0;
+var deadLines = [];
+var keyLeft = 37, keyRight = 39, keyUp = 38, keyDown = 40;
+var keySpace = 32, keyR = 82, keyF = 70, keyG = 71;
+var keyS = 83, keyB = 66, keyEnter = 13;
+var isRunningSoftDrop = false;
+var isHTA = navigator.appName == "Microsoft Internet Explorer";
+var prsLimit = 2, prsCount = 0, prsLastChosen = -1;
+var stayForever = false, pStayForeverFeature;
+var nLinesPerLevel = 10;
+var gsInitial = 0, gsRunning = 1, gsPaused = 2, gsOver = 3;
+var gameStatus = gsInitial, fntGameStatus;
+var pfRotation = NaN, divOnlyInHTA, lockScroll = false;
+var deg2rad = Math.PI / 180;
+
+var GF_STAY_FOREVER = 1;
+
+var allPieces = [
+    new Piece("I", "#00f0f0", 1, 4, [15, 15]),
+    new Piece("J", "#0000f0", 2, 3, [58, 39, 23, 57]),
+    new Piece("L", "#f0a000", 2, 3, [53, 15, 43, 60]),
+    new Piece("O", "#f0f000", 2, 2, [15]),
+    new Piece("S", "#00f000", 3, 2, [30, 45]),
+    new Piece("T", "#a000f0", 3, 2, [58, 46, 23, 29]),
+    new Piece("Z", "#f00000", 3, 2, [51, 30])
+];
+
+Array.prototype.clear = function() {
+    this.splice(0, this.length);
+};
+
+Array.prototype.pour = function() {
+    this.clear();
+    
+    for (var i = 0;i < arguments.length;i++)
+        this[i] = arguments[i];
+};
+
+Array.prototype.clone = function() {
+    var result = this.slice(0, this.length);
+    
+    for (var i = 0;i < result.length;i++)
+    {
+        if (result[i] instanceof Array)
+            result[i] = result[i].clone();
+    }
+    
+    return result;
+};
+
+Number.prototype.escape = function() {
+    if (isNaN(this))
+        return "N";
+    
+    var digits = this.toString().split("").reverse();
+    for (var i = 0;i < digits.length;i++)
+    {
+        if (digits[i] == 0)
+            digits[i] = 10;
+    }
+    
+    return String.fromCharCode.apply(null, digits);
+};
+
+String.prototype.unescape = function() {
+    if (this == "N")
+        return NaN;
+    
+    var result = "";
+    
+    for (var i = this.length - 1;i >= 0;i--)
+    {
+        var digit = this.charCodeAt(i);
+        
+        if (digit > 10)
+            throw new Error("Integer corrupted.");
+        
+        if (digit == 10)
+            digit = 0;
+        
+        result += digit;
+    }
+    
+    return result - 0;
+};
+
+onload = function() {
+    spScore = document.getElementById("idScore");
+    spLines = document.getElementById("idLines");
+    spLevel = document.getElementById("idLevel");
+    spTime = document.getElementById("idTime");
+    spNextPiece = document.getElementById("idNextPiece");
+    fntGameStatus = document.getElementById("idGameStatus");
+    pStayForeverFeature = document.getElementById("idStayForeverFeature");
+    divOnlyInHTA = document.getElementById("idOnlyInHTA");
+    tblPlayingField = document.getElementById("idPlayingField");
+    
+    for (var i = 0;i < pfHeight;i++)
+    {
+        var row = tblPlayingField.insertRow();
+        row.nFullCells = 0;
+        for (var j = 0;j < pfWidth;j++)
+        {
+            var cell = row.insertCell();
+            cell.width = cell.height = 20;
+            cell.bgColor = "#ffffff";
+        }
+    }
+    
+    allPieces[0].setShape("idI");
+    allPieces[1].setShape("idJ");
+    allPieces[2].setShape("idL");
+    allPieces[3].setShape("idO");
+    allPieces[4].setShape("idS");
+    allPieces[5].setShape("idT");
+    allPieces[6].setShape("idZ");
+    
+    var textbox = document.mainForm.txtPFRotationAngle;
+    textbox.onchange = handleInputAngle;
+    textbox.onkeyup = handleInputKeyUp;
+    textbox.onkeydown = handleInputKeyDown;
+    
+    if (!isHTA)
+    {
+        document.mainForm.btnRegInGD.style.display = "none";
+        divOnlyInHTA.style.display = "none";
+        setTimeout('alert("Welcome to Tetris on Android!\\nBe sure to try this app on Windows to enjoy more features!");', 500);
+    }
+};
+
+onbeforeunload = function() {
+    if (event.shiftKey && isHTA)
+    {
+        if ((gameStatus == gsRunning) || (gameStatus == gsPaused))
+            saveGame();
+    }
+};
+
+document.onkeydown = function() {
+    switch (event.keyCode)
+    {
+    case keyLeft :
+        nudgeLeft();
+        break;
+    case keyRight :
+        nudgeRight();
+        break;
+    case keyDown :
+        performSoftDrop();
+        break;
+    case keyUp :
+        rotateCurrentPiece();
+        break;
+    }
+};
+
+document.onkeyup = function() {
+    var doFocus = true;
+    
+    switch (event.keyCode)
+    {
+    case keyDown :
+        stopSoftDrop();
+        break;
+    case keySpace :
+        if (event.shiftKey)
+        {
+            if (gameStatus == gsInitial)
+                startGame(true);
+            else
+                restartGame();
+        }
+        else
+        {
+            if (gameStatus == gsInitial)
+                startGame();
+            else if (gameStatus == gsRunning)
+                pauseGame();
+            else if (gameStatus == gsPaused)
+                resumeGame();
+        }
+        
+        break;
+    case keyR :
+        registerInGD();
+        break;
+    case keyF :
+        if ((gameStatus == gsRunning) || (gameStatus == gsPaused))
+        {
+            if (!stayForever)
+                sustainCurrentLevel();
+        }
+        
+        break;
+    case keyG :
+        document.mainForm.chkPFGrid.click();
+        break;
+    case keyB :
+        document.mainForm.chkGrayScale.click();
+        break;
+    case keyS :
+        if ((gameStatus == gsRunning) || (gameStatus == gsPaused))
+            saveGame();
+        break;
+    case keyEnter :
+        lockScroll = !lockScroll;
+        document.body.style.overflow = lockScroll ? "hidden" : "";
+        break;
+    default :
+        doFocus = false;
+    }
+    
+    if (doFocus)
+        document.body.focus();
+};
+
+document.onselectstart = function() {
+    if (isHTA)
+    {
+        var srcElem = event.srcElement;
+        
+        if ((srcElem.tagName.toLowerCase() == "input") && (srcElem.type.toLowerCase() == "text"))
+            return true;
+        
+        if (srcElem.tagName.toLowerCase() == "textarea")
+            return true;
+    }
+    
+    return false;
+};
+
+function registerInGD()
+{
+    try
+    {
+        var scriptex = new ActiveXObject("Scriptex.Util");
+        var gd = scriptex.GetGD();
+        if (event.shiftKey)
+        {
+            gd("Tetris") = scriptex.CreateDuplexBridge(gd, window);
+            alert("A bridge for the window object has been registered in the GD with the key 'Tetris'.")
+        }
+        else
+        {
+            gd("Tetris") = window;
+            alert("The window object has been registered in the GD with the key 'Tetris'.");
+        }
+    }
+    catch (e)
+    {
+        alert("Unable to register the window object in the GD:\n" + e.message);
+    }
+}
+
+function Piece(name, color, width, height, contentMasks)
+{
+    this.name = name;
+    this.color = color;
+    this.w = width;
+    this.h = height;
+    
+    if (!contentMasks)
+        contentMasks = [0];
+    
+    this.content0 = new Array(width);
+    for (var i = 0;i < width;i++)
+    {
+        this.content0[i] = new Array(height);
+        for (var j = 0;j < height;j++)
+        {
+            var bi = j * width + i;
+            this.content0[i][j] = (contentMasks[0] & (1 << bi)) != 0;
+        }
+    }
+    
+    this.content1 = this.content0;
+    if (contentMasks.length > 1)
+    {
+        this.content1 = new Array(height);
+        for (var i = 0;i < height;i++)
+        {
+            this.content1[i] = new Array(width);
+            for (var j = 0;j < width;j++)
+            {
+                var bi = j * height + i;
+                this.content1[i][j] = (contentMasks[1] & (1 << bi)) != 0;
+            }
+        }
+    }
+    
+    this.content2 = this.content0;
+    this.content3 = (contentMasks.length == 1) ? this.content0 : this.content1;
+    if (contentMasks.length == 4)
+    {
+        this.content2 = new Array(width);
+        for (var i = 0;i < width;i++)
+        {
+            this.content2[i] = new Array(height);
+            for (var j = 0;j < height;j++)
+            {
+                var bi = j * width + i;
+                this.content2[i][j] = (contentMasks[2] & (1 << bi)) != 0;
+            }
+        }
+        
+        this.content3 = new Array(height);
+        for (var i = 0;i < height;i++)
+        {
+            this.content3[i] = new Array(width);
+            for (var j = 0;j < width;j++)
+            {
+                var bi = j * height + i;
+                this.content3[i][j] = (contentMasks[3] & (1 << bi)) != 0;
+            }
+        }
+    }
+    
+    this.content = this.content0;
+    
+    this.placement = [];
+    this.x = this.y = NaN;
+    this.display = function(x, y) {
+        function getCellAtCoords(x, y)
+        {
+            if ((x < 0) || (y < 0))
+                return null;
+            
+            if ((x >= pfWidth) || (y >= pfHeight))
+                return null;
+            
+            return tblPlayingField.rows[y].cells[x];
+        }
+        
+        function colorCell(cell, color)
+        {
+            if (color)
+            {
+                cell.bgColor = color;
+                cell.parentElement.nFullCells++;
+            }
+            else
+            {
+                cell.bgColor = "#ffffff";
+                cell.parentElement.nFullCells--;
+            }
+        }
+        
+        for (var i = 0;i < this.placement.length;i++)
+            colorCell(this.placement[i]);
+        
+        if (isNaN(x) && isNaN(y))
+        {
+            this.placement.clear();
+            this.x = this.y = NaN;
+            return true;
+        }
+        
+        var newPlacement = [];
+        for (var i = 0;i < this.w;i++)
+        {
+            for (var j = 0;j < this.h;j++)
+            {
+                if (this.content[i][j])
+                {
+                    var placementCell = getCellAtCoords(x + i, y + j);
+                    if (placementCell)
+                        newPlacement.push(placementCell);
+                }
+            }
+        }
+        
+        var fullCellExists = false;
+        for (var i = 0;i < newPlacement.length;i++)
+        {
+            if (newPlacement[i].bgColor != "#ffffff")
+            {
+                fullCellExists = true;
+                break;
+            }
+        }
+        
+        if (fullCellExists)
+        {
+            for (var i = 0;i < this.placement.length;i++)
+                colorCell(this.placement[i], this.color);
+            
+            return false;
+        }
+        
+        for (var i = 0;i < newPlacement.length;i++)
+            colorCell(newPlacement[i], this.color);
+        
+        this.placement = newPlacement;
+        this.x = x;
+        this.y = y;
+        return true;
+    };
+    
+    this.toString = function() {
+        return this.name;
+    };
+    
+    this.shape = null;
+    this.setShape = function(shapeID) {
+        this.shape = document.getElementById(shapeID);
+        this.shape.fillcolor = this.color;
+        this.shape.className = "PieceShape";
+        this.shape.style.width = this.content0.length * 20;
+        this.shape.style.height = this.content0[0].length * 20;
+        this.shape.style.display = "none";
+    };
+    
+    this.r = 0;
+    this.rotate = function(clockwise) {
+        switch (clockwise ? ++this.r : --this.r)
+        {
+        case -1 :
+            this.content = this.content3;
+            this.r = 3;
+            break;
+        case 0 :
+            this.content = this.content0;
+            break;
+        case 1 :
+            this.content = this.content1;
+            break;
+        case 2 :
+            this.content = this.content2;
+            break;
+        case 3 :
+            this.content = this.content3;
+            break;
+        case 4 :
+            this.content = this.content0;
+            this.r = 0;
+            break;
+        }
+        
+        this.w = this.content.length;
+        this.h = this.content[0].length;
+        
+        if (isNaN(this.x))
+            return true;
+        
+        if (this.display(this.x, this.y))
+            return true;
+        
+        this.rotate(!clockwise);
+        return false;
+    };
+    
+    this.reset = function() {
+        this.placement.clear();
+        this.x = this.y = NaN;
+        this.r = 0;
+        this.content = this.content0;
+        this.w = this.content0.length;
+        this.h = this.content0[0].length;
+    };
+}
+
+function chooseRandomPiece()
+{
+    var rn = Math.round(Math.random() * (allPieces.length - 1));
+    
+    if (rn == prsLastChosen)
+    {
+        if (++prsCount == prsLimit)
+        {
+            if (++rn == allPieces.length)
+                rn = 0;
+            
+            prsCount = 0;
+        }
+    }
+    
+    return allPieces[prsLastChosen = rn];
+}
+
+function startGame(loadSavedGame)
+{
+    if (loadSavedGame)
+    {
+        var data = clipboardData.getData("text");
+        if (!data)
+        {
+            alert("Your clipboard seems empty!");
+            return;
+        }
+        
+        try
+        {
+            var snapshot = parseSavedData(data);
+        }
+        catch (e)
+        {
+            alert("A technical error occured when parsing the game data obtained from clipboard:\n" + e.message);
+            return;
+        }
+        
+        var pi = snapshot.GAME_HEADER.CurrentPiece;
+        currentPiece = allPieces[pi];
+        if (!currentPiece)
+        {
+            alert("No piece exists at index " + pi + ".");
+            currentPiece = null;
+            return;
+        }
+        
+        pi = snapshot.GAME_HEADER.NextPiece;
+        nextPiece = allPieces[pi];
+        if (!nextPiece)
+        {
+            alert("No piece exists at index " + pi + ".");
+            currentPiece = nextPiece = null;
+            return;
+        }
+        
+        for (var i = 0;i < pfWidth;i++)
+        {
+            for (var j = 0;j < pfHeight;j++)
+            {
+                var pi = snapshot.PAYLOAD.PFContent[i][j];
+                if (!isNaN(pi))
+                {
+                    var p = allPieces[pi];
+                    if (!p)
+                    {
+                        alert("No piece exists at index " + pi + ".");
+                        currentPiece = nextPiece = null;
+                        clearPF();
+                        return;
+                    }
+                    
+                    tblPlayingField.rows[j].cells[i].bgColor = p.color;
+                    tblPlayingField.rows[j].nFullCells++;
+                }
+            }
+        }
+        
+        score = snapshot.GAME_HEADER.Score;
+        lines = snapshot.GAME_HEADER.Lines;
+        level = snapshot.GAME_HEADER.Level;
+        time = snapshot.GAME_HEADER.Time;
+        
+        if (snapshot.GAME_HEADER.GameFlags & GF_STAY_FOREVER)
+            sustainCurrentLevel();
+    }
+    else
+    {
+        currentPiece = chooseRandomPiece();
+        nextPiece = chooseRandomPiece();
+    }
+    
+    spScore.innerText = score;
+    spLines.innerText = lines;
+    spLevel.innerText = level;
+    spTime.innerText = time;
+    
+    mainInterval = setInterval(nudge, getNudgeDelay());
+    timerInterval = setInterval(tick, 1000);
+    
+    document.mainForm.btnStartGame.style.display = "none";
+    document.mainForm.btnPauseResume.style.display = "inline";
+    document.mainForm.btnRestartGame.style.display = "inline";
+    pStayForeverFeature.style.visibility = "visible";
+    if (isHTA)
+        document.mainForm.btnSaveGame.style.display = "inline";
+    
+    gameStatus = gsRunning;
+}
+
+function nudge()
+{
+    if (isNaN(currentPiece.x))
+    {
+        if (isHTA)
+        {
+            spNextPiece.innerText = nextPiece.name;
+            spNextPiece.style.color = nextPiece.color;
+            
+            if (currentPiece.shape)
+                currentPiece.shape.style.display = "none";
+            if (nextPiece.shape)
+                nextPiece.shape.style.display = "";
+        }
+        else
+            document.getElementById("idCellNP").bgColor = nextPiece.color;
+        
+        var x = Math.floor((pfWidth - currentPiece.w) / 2);
+        var y = 1 - currentPiece.h;
+        if (!currentPiece.display(x, y))
+            gameOver();
+    }
+    else
+    {
+        if (currentPiece.y + currentPiece.h == pfHeight)
+            switchToNextPiece();
+        else if (!currentPiece.display(currentPiece.x, currentPiece.y + 1))
+            switchToNextPiece();
+    }
+}
+
+function gameOver()
+{
+    clearInterval(mainInterval);
+    clearInterval(timerInterval);
+    
+    document.mainForm.btnPauseResume.style.display = "none";
+    document.mainForm.btnSaveGame.style.display = "none";
+    pStayForeverFeature.style.visibility = "hidden";
+    
+    fntGameStatus.innerText = "Game Over";
+    gameStatus = gsOver;
+}
+
+function switchToNextPiece(bySoftDrop)
+{
+    currentPiece.reset();
+    currentPiece = nextPiece;
+    nextPiece = chooseRandomPiece();
+    
+    spScore.innerText = score += bySoftDrop ? 15 : 10;
+    
+    for (var i = 0;i < pfHeight;i++)
+    {
+        if (tblPlayingField.rows[i].nFullCells == pfWidth)
+        {
+            for (var j = 0;j < pfWidth;j++)
+                tblPlayingField.rows[i].cells[j].bgColor = "#000000";
+            
+            deadLines.push(tblPlayingField.rows[i]);
+        }
+    }
+    
+    if (deadLines.length)
+        setTimeout(clearDeadLines, 450);
+}
+
+function clearDeadLines()
+{
+    for (var i = 0;i < deadLines.length;i++)
+    {
+        if (isHTA)
+            var row = tblPlayingField.moveRow(deadLines[i].rowIndex, 0);
+        else
+            var row = tblPlayingField.firstChild.insertBefore(deadLines[i], tblPlayingField.rows[0]);
+        row.nFullCells = 0;
+        
+        for (var j = 0;j < pfWidth;j++)
+            row.cells[j].bgColor = "#ffffff";
+    }
+    
+    spLines.innerText = lines += deadLines.length;
+    if (lines >= nLinesPerLevel)
+        goToNextLevel();
+    
+    var s;
+    switch (deadLines.length)
+    {
+    case 1 :
+        s = 100;
+        break;
+    case 2 :
+        s = 200;
+        break;
+    case 3 :
+        s = 400;
+        break;
+    default :
+        s = 800;
+    }
+    
+    spScore.innerText = score += s;
+    
+    deadLines.clear();
+}
+
+function tick()
+{
+    spTime.innerText = ++time;
+}
+
+function showPFGrid(fShow)
+{
+    tblPlayingField.border = fShow ? 1 : 0;
+}
+
+function nudgeLeft()
+{
+    if ((!!event) && (gameStatus != gsRunning))
+        return;
+    
+    if (currentPiece.x)
+        currentPiece.display(currentPiece.x - 1, currentPiece.y);
+}
+
+function nudgeRight()
+{
+    if ((!!event) && (gameStatus != gsRunning))
+        return;
+    
+    if ((!isNaN(currentPiece.x)) && (currentPiece.x + currentPiece.w != pfWidth))
+        currentPiece.display(currentPiece.x + 1, currentPiece.y);
+}
+
+function performSoftDrop()
+{
+    if ((gameStatus != gsRunning) || isNaN(currentPiece.x))
+        return;
+    
+    if (!event.repeat)
+    {
+        clearInterval(mainInterval);
+        isRunningSoftDrop = true;
+    }
+    
+    if (currentPiece.y + currentPiece.h == pfHeight)
+    {
+        switchToNextPiece(true);
+        stopSoftDrop();
+    }
+    else if (!currentPiece.display(currentPiece.x, currentPiece.y + 1))
+    {
+        switchToNextPiece(true);
+        stopSoftDrop();
+    }
+}
+
+function stopSoftDrop()
+{
+    if (isRunningSoftDrop)
+    {
+        mainInterval = setInterval(nudge, getNudgeDelay());
+        isRunningSoftDrop = false;
+    }
+}
+
+function rotateCurrentPiece()
+{
+    if ((!!event) && (gameStatus != gsRunning))
+        return;
+    
+    if (currentPiece.rotate(true) && (!isNaN(currentPiece.x)))
+    {
+        if (currentPiece.y + currentPiece.h > pfHeight)
+            currentPiece.rotate(false);
+        else if (currentPiece.x + currentPiece.w > pfWidth)
+        {
+            if (!currentPiece.display(pfWidth - currentPiece.w, currentPiece.y))
+                currentPiece.rotate(false);
+        }
+    }
+}
+
+function pauseGame()
+{
+    if (isRunningSoftDrop || (deadLines.length != 0))
+        return;
+    
+    clearInterval(mainInterval);
+    clearInterval(timerInterval);
+    
+    tblPlayingField.style.visibility = "hidden";
+    
+    document.mainForm.btnPauseResume.onclick = resumeGame;
+    document.mainForm.btnPauseResume.innerText = "Resume";
+    
+    fntGameStatus.innerText = "Paused";
+    gameStatus = gsPaused;
+}
+
+function resumeGame()
+{
+    mainInterval = setInterval(nudge, getNudgeDelay());
+    timerInterval = setInterval(tick, 1000);
+    
+    tblPlayingField.style.visibility = "visible";
+    
+    document.mainForm.btnPauseResume.onclick = pauseGame;
+    document.mainForm.btnPauseResume.innerText = "Pause";
+    
+    fntGameStatus.innerText = "";
+    gameStatus = gsRunning;
+}
+
+function getNudgeDelay()
+{
+    return (level > 12) ? 350 : 950 - level * 50;
+}
+
+function goToNextLevel()
+{
+    if (!stayForever)
+    {
+        spLevel.innerText = ++level;
+        spLines.innerText = lines %= nLinesPerLevel;
+        
+        clearInterval(mainInterval);
+        mainInterval = setInterval(nudge, getNudgeDelay());
+    }
+}
+
+function sustainCurrentLevel()
+{
+    if (event)
+        event.returnValue = false;
+    
+    stayForever = true;
+    pStayForeverFeature.innerText = "Now you get to play level " + level + " forever!";
+    pStayForeverFeature.style.color = "red";
+}
+
+function restartGame()
+{
+    if (isRunningSoftDrop || (deadLines.length != 0))
+        return;
+    
+    if (gameStatus == gsPaused)
+    {
+        tblPlayingField.style.visibility = "visible";
+        document.mainForm.btnPauseResume.onclick = pauseGame;
+        document.mainForm.btnPauseResume.innerText = "Pause";
+    }
+    
+    clearInterval(mainInterval);
+    clearInterval(timerInterval);
+    
+    currentPiece.reset();
+    nextPiece.reset();
+    
+    if (isHTA)
+    {
+        if (nextPiece.shape)
+            nextPiece.shape.style.display = "none";
+    }
+    
+    score = 0;
+    lines = 0;
+    level = 1;
+    time = 0;
+    
+    prsCount = 0;
+    prsLastChosen = -1;
+    
+    stayForever = false;
+    pStayForeverFeature.style.color = "";
+    pStayForeverFeature.innerText = "";
+    var a = document.createElement("a");
+    a.href = "#";
+    a.onclick = sustainCurrentLevel;
+    a.innerText = "Stay in this level forever!";
+    pStayForeverFeature.appendChild(a);
+    
+    fntGameStatus.innerText = spNextPiece.innerText = "";
+    
+    clearPF();
+    startGame();
+}
+
+function clearPF()
+{
+    for (var i = 0;i < pfHeight;i++)
+    {
+        for (var j = 0;j < pfWidth;j++)
+            tblPlayingField.rows[i].cells[j].bgColor = "#ffffff";
+        
+        tblPlayingField.rows[i].nFullCells = 0;
+    }
+}
+
+/* Tetris Snapshot Structure
+ * #typedef small_int piece_number
+ *
+ * //Game Flags
+ * #define GF_STAY_FOREVER (1)
+ *
+ * [APPINFO_HEADER]A[GAME_HEADER]A[PAYLOAD]
+ * APPINFO_HEADER:
+ * [string MajorVersion]@SavedTetrisGame@[string Language]@
+ * GAME_HEADER:
+ * [piece_number CurrentPiece][piece_number NextPiece]@[res int CurPieceX]@[res int CurPieceY]@[res small_int CurPieceR]@[uint Score]@[uint Lines]@[uint Level]@[uint Time]@[uint PFWidth]@[uint PFHeight]@[uint GameFlags]
+ * PAYLOAD:
+ * [piece_number Cell0][piece_number Cell1][piece_number Cell2]...
+ */
+
+function saveGame(silent)
+{
+    function findPiece(colorOrObj)
+    {
+        if (colorOrObj instanceof Piece)
+        {
+            for (var i = 0;i < allPieces.length;i++)
+            {
+                if (allPieces[i] === colorOrObj)
+                    return String.fromCharCode(i + 1);
+            }
+        }
+        else
+        {
+            colorOrObj = colorOrObj.toLowerCase();
+            if (colorOrObj == "#ffffff")
+                return "?";
+            
+            for (var i = 0;i < allPieces.length;i++)
+            {
+                if (allPieces[i].color.toLowerCase() == colorOrObj)
+                    return String.fromCharCode(i + 1);
+            }
+        }
+        
+        return "";
+    }
+    
+    if (deadLines.length)
+        return;
+    
+    if (allPieces.length > 62)
+    {
+        if (!silent)
+            alert("Unable to save the game as you have more than 62 pieces!");
+        return false;
+    }
+    
+    var data = escape("1.0") + "@SavedTetrisGame@" + escape("EN-US") + "@A";
+    data += (findPiece(currentPiece)) + (findPiece(nextPiece)) + "@";
+    data += "N@N@" + (String.fromCharCode(1)) + "@";
+    data += (score.escape()) + "@" + (lines.escape()) + "@" +
+                (level.escape()) + "@" + (time.escape()) + "@";
+    data += (pfWidth.escape()) + "@" + (pfHeight.escape()) + "@";
+    
+    var flags = 0;
+    if (stayForever)
+        flags |= GF_STAY_FOREVER;
+    
+    data += (flags.escape()) + "A";
+    
+    if (currentPiece)
+    {
+        for (var i = 0;i < currentPiece.placement.length;i++)
+            currentPiece.placement[i].bgColor = "#ffffff";
+    }
+    
+    for (var i = 0;i < tblPlayingField.cells.length;i++)
+        data += findPiece(tblPlayingField.cells[i].bgColor);
+    
+    if (currentPiece)
+    {
+        for (var i = 0;i < currentPiece.placement.length;i++)
+            currentPiece.placement[i].bgColor = currentPiece.color;
+    }
+    
+    var result = clipboardData.setData("text", data);
+    
+    if (!silent)
+    {
+        if (result)
+            alert("The game was successfully saved into the clipboard. To load the saved " + 
+                "game later, open the app and press Shift+Space, or click on the Start " +
+                "Button while holding down Shift Key.");
+        else
+            alert("Unable to put the game data into the clipboard.");
+    }
+    
+    return result;
+}
+
+function parseSavedData(data)
+{
+    function isValidPieceNumber(pn)
+    {
+        return((pn != 0) && (pn <= 32));
+    }
+
+    function isValidPieceNumber2(pn)
+    {
+        return((pn != 0) && ((pn <= 32) || (pn == 63)));
+    }
+    
+    var result = {Version:"", GAME_HEADER:{}, PAYLOAD:{}};
+    
+    var versionOffset = data.indexOf("@");
+    if (versionOffset < 0)
+        throw new Error("Unable to extract the app version from the data.");
+    
+    result.Version = data.substring(0, versionOffset);
+    if (result.Version != "1.0")
+        throw new Error("The current version of the app does not match the version stored within the data.");
+    
+    var gho = data.indexOf("@A");
+    if (gho < 0)
+        throw new Error("Unable to find the offset between the APPINFO Header and the GAME Header.");
+    
+    var arr = data.substr(gho + 2).split("A");
+    if (arr.length != 2)
+        throw new Error("Unable to obtain the GAME Header and the payload from the data.");
+    
+    var rawGameHeader = arr[0].split("@");
+    if (rawGameHeader.length < 11)
+        throw new Error("Not enough items within the GAME Header. " + (rawGameHeader.length) + " item(s) exist out of 11.");
+    if (rawGameHeader.length > 11)
+        throw new Error("Too many items within the GAME Header. There are " + (rawGameHeader.length - 11) + " extra items.");
+    
+    var rawPayload = arr[1];
+    
+    with (result)
+    {
+        GAME_HEADER.PFWidth = rawGameHeader[8].unescape();
+        GAME_HEADER.PFHeight = rawGameHeader[9].unescape();
+        
+        if ((!GAME_HEADER.PFWidth) || (!GAME_HEADER.PFHeight))
+            throw new Error("Invalid PF dimensions.");
+        
+        if ((pfWidth != GAME_HEADER.PFWidth) || (pfHeight != GAME_HEADER.PFHeight))
+            throw new Error("PF dimensions do not match. Given: " + (GAME_HEADER.PFWidth) + "x" + (GAME_HEADER.PFHeight) +
+                " Expected: " + pfWidth + "x" + pfHeight);
+        
+        if (pfWidth * pfHeight != rawPayload.length)
+            throw new Error("Invalid payload length. Given: " + (rawPayload.length) + " Expected: " + (pfWidth * pfHeight));
+        
+        GAME_HEADER.GameFlags = rawGameHeader[10].unescape();
+        
+        if (isNaN(GAME_HEADER.GameFlags))
+            throw new Error("Invalid game flags.");
+        
+        GAME_HEADER.CurrentPiece = rawGameHeader[0].charCodeAt(0);
+        GAME_HEADER.NextPiece = rawGameHeader[0].charCodeAt(1);
+        
+        if ((!isValidPieceNumber(GAME_HEADER.CurrentPiece)) || (!isValidPieceNumber(GAME_HEADER.NextPiece)))
+            throw new Error("Invalid piece number in the CurrentPiece or NextPiece items.");
+        
+        GAME_HEADER.CurrentPiece--;
+        GAME_HEADER.NextPiece--;
+        
+        GAME_HEADER.Score = rawGameHeader[4].unescape();
+        GAME_HEADER.Lines = rawGameHeader[5].unescape();
+        GAME_HEADER.Level = rawGameHeader[6].unescape();
+        GAME_HEADER.Time = rawGameHeader[7].unescape();
+        
+        if (isNaN(GAME_HEADER.Score) || isNaN(GAME_HEADER.Lines) || isNaN(GAME_HEADER.Time) || (!GAME_HEADER.Level))
+            throw new Error("Invalid value of score, lines, level, or time.");
+        
+        PAYLOAD.PFContent = new Array(pfWidth);
+        for (var i = 0;i < pfWidth;i++)
+        {
+            PAYLOAD.PFContent[i] = new Array(pfHeight);
+            for (var j = 0;j < pfHeight;j++)
+            {
+                var pn = rawPayload.charCodeAt(j * pfWidth + i);
+                if (!isValidPieceNumber2(pn))
+                    throw new Error("Invalid piece number (" + pn + ") within the PF content.");
+                
+                PAYLOAD.PFContent[i][j] = (pn == 63) ? NaN : pn - 1;
+            }
+        }
+    }
+    
+    return result;
+}
+
+function turnGrayScale(fGrayScale)
+{
+    tblPlayingField.filters[0].Enabled = fGrayScale;
+    
+    for (var i = 0;i < allPieces.length;i++)
+    {
+        if (allPieces[i].shape)
+            allPieces[i].shape.filters[0].Enabled = fGrayScale;
+    }
+}
+
+function enablePFRotation(fEnable)
+{
+    tblPlayingField.filters[1].Enabled = fEnable;
+    
+    document.mainForm.txtPFRotationAngle.disabled = !fEnable;
+    pfRotation = fEnable ? Number(document.mainForm.txtPFRotationAngle.value) : NaN;
+}
+
+function handleInputAngle()
+{
+    var angle = Number(this.value);
+    if (isNaN(angle))
+        this.value = pfRotation;
+    else if ((angle < -360) || (angle > 360))
+        this.value = pfRotation;
+    else
+        rotatePF(angle);
+}
+
+function rotatePF(angle)
+{
+    var rad = angle * deg2rad;
+    var cosTheta = Math.cos(rad);
+    var sinTheta = Math.sin(rad);
+    
+    tblPlayingField.filters[1].M11 = cosTheta;
+    tblPlayingField.filters[1].M12 = -sinTheta;
+    tblPlayingField.filters[1].M21 = sinTheta;
+    tblPlayingField.filters[1].M22 = cosTheta;
+    
+    tblPlayingField.parentElement.width = tblPlayingField.offsetWidth;
+    tblPlayingField.parentElement.height = tblPlayingField.offsetHeight;
+    
+    pfRotation = angle;
+}
+
+function handleInputKeyDown()
+{
+    event.cancelBubble = true;
+    
+    var angle = Number(this.value)
+    if (isNaN(angle))
+        return;
+    
+    switch (event.keyCode)
+    {
+    case keyUp :
+        angle += 10;
+        if ((angle < -360) || (angle > 360))
+            break;
+        
+        this.value = angle;
+        handleInputAngle.call(this);
+        break;
+    case keyDown :
+        angle -= 10;
+        if ((angle < -360) || (angle > 360))
+            break;
+        
+        this.value = angle;
+        handleInputAngle.call(this);
+        break;
+    }
+}
+
+function handleInputKeyUp()
+{
+    event.cancelBubble = true;
+    
+    if (event.keyCode == keyEnter)
+        this.blur();
+}
+</script>
+</head>
+<body bgcolor="#ffffcc">
+<table border="1" bordercolor="black" cellpadding="6">
+<tr>
+    <td rowspan="2">
+        <table id="idPlayingField" border="1"></table>
+    </td>
+    <td align="center" valign="middle" bgcolor="white" id="idCellNP">
+        Next piece:<br>
+        <v:rect id="idI" />
+        <v:rect id="idO" />
+        <v:shape id="idT" coordsize="3, 2" path="m 0,2 l 0,1, 1,1, 1,0, 2,0, 2,1, 3,1, 3,2 x e" />
+        <v:shape id="idS" coordsize="3, 2" path="m 0,1 l 1,1, 1,0, 3,0, 3,1, 2,1, 2,2, 0,2 x e" />
+        <v:shape id="idJ" coordsize="2, 3" path="m 2,0 l 2,3, 0,3, 0,2, 1,2, 1,0 x e" />
+        <v:shape id="idZ" coordsize="3, 2" path="m 0,1 l 1,1, 1,0, 3,0, 3,1, 2,1, 2,2, 0,2 x e" style="flip:x;" />
+        <v:shape id="idL" coordsize="2, 3" path="m 2,0 l 2,3, 0,3, 0,2, 1,2, 1,0 x e" style="flip:x;" />
+        <br><span id="idNextPiece"></span>
+    </td>
+</tr>
+<tr>
+    <td align="center" valign="middle">
+        <font color="red">Score: </font><span id="idScore"></span><br>
+        <font color="green">Lines: </font><span id="idLines"></span><br>
+        <font color="blue">Level: </font><span id="idLevel"></span><br>
+        <font color="brown">Time: </font><span id="idTime"></span><br>
+        <font id="idGameStatus" color="red" size="5px"></font>
+    </td>
+</tr>
+</table>
+
+<form name="mainForm" onsubmit="return false;">
+<fieldset id="idGameControls">
+<legend>Game controls</legend>
+<button name="btnLeft" onclick="nudgeLeft()" ondblclick="nudgeLeft()">&#9754;</button>
+<button name="btnRotate" onclick="rotateCurrentPiece()">&#9737;</button>
+<button name="btnRight" onclick="nudgeRight()" ondblclick="nudgeRight()">&#9755;</button>
+</fieldset><br>
+
+<button name="btnStartGame" onclick="startGame(event.shiftKey)">Start</button>
+<button name="btnPauseResume" onclick="pauseGame()" style="display:none;">Pause</button>
+<button name="btnRestartGame" onclick="restartGame()" style="display:none;">Restart</button>
+<button name="btnSaveGame" onclick="saveGame()" style="display:none;">Save</button>
+<button name="btnRegInGD" onclick="registerInGD()">Register in GD</button>
+<button name="btnExitGame" onclick="window.close()">Exit</button>
+
+<p id="idStayForeverFeature" style="visibility:hidden;">
+<a href="#" onclick="sustainCurrentLevel()">Stay in this level forever!</a>
+</p>
+
+<input type="checkbox" id="idPFGrid" name="chkPFGrid" onclick="showPFGrid(this.checked)" checked>
+<label for="idPFGrid">Gridlines</label>
+<div id="idOnlyInHTA">
+<input type="checkbox" id="idGrayScale" name="chkGrayScale" onclick="turnGrayScale(this.checked)">
+<label for="idGrayScale">Grayscale</label><br>
+<input type="checkbox" id="idRotatePF" name="chkRotatePF" onclick="enablePFRotation(this.checked)">
+<label for="idRotatePF">Rotate PF!</label><br>
+<input type="text" id="idPFRotationAngle" name="txtPFRotationAngle" maxlength="6" value="0" disabled> degrees
+</div>
+</form>
+</body>
+</html>
