@@ -5,6 +5,7 @@
 <meta http-equiv="content-type" content="text/html; charset = UTF-8">
 <meta http-equiv="MSThemeCompatible" content="Yes">
 <hta:application applicationname="Tetris" version="1.0" contextmenu="no" windowstate="maximize" singleinstance="no" />
+<!-- <bgsound src="TetrisMusic.mp3" loop="-1"> -->
 
 <style type="text/css">
 v\:* {
@@ -182,7 +183,6 @@ onload = function() {
     
     if (!isHTA)
     {
-        document.mainForm.btnRegInGD.style.display = "none";
         divOnlyInHTA.style.display = "none";
         setTimeout('alert("Welcome to Tetris on Android!\\nBe sure to try this app on Windows to enjoy more features!");', 500);
     }
@@ -241,9 +241,6 @@ document.onkeyup = function() {
         }
         
         break;
-    case keyR :
-        registerInGD();
-        break;
     case keyF :
         if ((gameStatus == gsRunning) || (gameStatus == gsPaused))
         {
@@ -288,29 +285,6 @@ document.onselectstart = function() {
     
     return false;
 };
-
-function registerInGD()
-{
-    try
-    {
-        var scriptex = new ActiveXObject("Scriptex.Util");
-        var gd = scriptex.GetGD();
-        if (event.shiftKey)
-        {
-            gd("Tetris") = scriptex.CreateDuplexBridge(gd, window);
-            alert("A bridge for the window object has been registered in the GD with the key 'Tetris'.")
-        }
-        else
-        {
-            gd("Tetris") = window;
-            alert("The window object has been registered in the GD with the key 'Tetris'.");
-        }
-    }
-    catch (e)
-    {
-        alert("Unable to register the window object in the GD:\n" + e.message);
-    }
-}
 
 function Piece(name, color, width, height, contentMasks)
 {
@@ -1247,7 +1221,6 @@ function handleInputKeyUp()
 <button name="btnPauseResume" onclick="pauseGame()" style="display:none;">Pause</button>
 <button name="btnRestartGame" onclick="restartGame()" style="display:none;">Restart</button>
 <button name="btnSaveGame" onclick="saveGame()" style="display:none;">Save</button>
-<button name="btnRegInGD" onclick="registerInGD()">Register in GD</button>
 <button name="btnExitGame" onclick="window.close()">Exit</button>
 
 <p id="idStayForeverFeature" style="visibility:hidden;">
