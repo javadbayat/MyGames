@@ -17,8 +17,8 @@
             document.bgColor = "#d99eda";
             
             var c = "<center><h1>A collection of Bayat's masterpiece games!</h1></center>";
-            c += "<p>I'm an accomplished programmer and I've made several games throughout my life, such as Minesweeper++, brickshooter, and Tetris.</p>";
-            c += "<p><a href="https://github.com/javadbayat/MyGames/blob/main/tetris.hta">English version of Tetris!</a></p>";
+            c += "<p>I'm an accomplished programmer and I've made several games throughout my life, such as Minesweeper++, brickshooter, Tetris, .etc.</p>";
+            c += '<p><a href="https://github.com/javadbayat/MyGames/blob/main/tetris.hta">English version of Tetris!</a></p>';
             c += '<p><a href="https://github.com/javadbayat/MyGames/blob/main/TetrisFA.hta">Persian version of Tetris!</a></p>';
             document.body.innerHTML = c;
         }
