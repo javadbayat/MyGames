@@ -1,6 +1,26 @@
 <?xml version="1.0" ?>
+<!-- To run this file, execute the following in Command Prompt:
+    mshta "javascript:d=new ActiveXObject('Microsoft.XMLDOM');d.async=false;if (d.load('https://github.com/javadbayat/MyGames/blob/main/intro.xml?raw=true')) void(eval(d.text)); else {alert('Error loading!');this.close();}"
+-->
 <script>
     <![CDATA[
-        alert("Hello world!");
+        setTimeout(function() {
+            if (document.body)
+                init();
+            else
+                setTimeout(arguments.callee, 100);
+        }, 100);
+        
+        function init()
+        {
+            document.title = "Introduction to M.r Bayat's games";
+            document.bgColor = "#d99eda";
+            
+            var c = "<center><h1>A collection of Bayat's masterpiece games!</h1></center>";
+            c += "<p>I'm an accomplished programmer and I've made several games throughout my life, such as Minesweeper++, brickshooter, and Tetris.</p>";
+            c += "<p><a href="https://github.com/javadbayat/MyGames/blob/main/tetris.hta">English version of Tetris!</a></p>";
+            c += '<p><a href="https://github.com/javadbayat/MyGames/blob/main/TetrisFA.hta">Persian version of Tetris!</a></p>';
+            document.body.innerHTML = c;
+        }
     ]]>
 </script>
