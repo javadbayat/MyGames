@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<script>
+    <![CDATA[
+        alert("Hello world!");
+    ]]>
+</script>
