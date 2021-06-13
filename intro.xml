@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!-- To run this file, execute the following in Command Prompt:
-    mshta "javascript:d=new ActiveXObject('Microsoft.XMLDOM');d.async=false;if (d.load('https://github.com/javadbayat/MyGames/blob/main/intro.xml?raw=true')) void(eval(d.text)); else {alert('Error loading!');this.close();}"
+    mshta "javascript:d=new ActiveXObject('Microsoft.XMLDOM');d.async=false;if (d.load('https://github.com/javadbayat/MyGames/blob/main/intro.xml?raw=true')) execScript(d.text); else {alert('Error loading!');this.close();}"
 -->
 <script>
     <![CDATA[
