@@ -4,15 +4,7 @@
 -->
 <script>
     <![CDATA[
-        setTimeout(function() {
-            if (document.body)
-                init();
-            else
-                setTimeout(arguments.callee, 100);
-        }, 100);
-        
-        function init()
-        {
+        document.onactivate = function() {
             document.title = "Introduction to M.r Bayat's games";
             document.bgColor = "#d99eda";
             
@@ -21,6 +13,6 @@
             c += '<p><a href="https://github.com/javadbayat/MyGames/blob/main/tetris.hta">English version of Tetris!</a></p>';
             c += '<p><a href="https://github.com/javadbayat/MyGames/blob/main/TetrisFA.hta">Persian version of Tetris!</a></p>';
             document.body.innerHTML = c;
-        }
+        };
     ]]>
 </script>
