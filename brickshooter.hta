@@ -215,7 +215,7 @@ v\:* {
 </style>
 <hta:application ID="app"
     applicationname="Brick Shooter"
-    version="1.0"
+    version="1.1"
     caption="no"
     icon="images\icon.ico"
     showintaskbar="Yes"
@@ -236,7 +236,7 @@ v\:* {
     var brick_brown = 0, brick_green = 1, brick_bouncy = 2, brick_stone = 3, brick_strong = 4, brick_risky = 5;
     var level_bonus = 8;
     var gameInitialized = false;
-    var cv = "1.0", bt = new Date("Sat Jul 24 12:40:48 UTC+0430 2021");
+    var cv = "1.1", bt = new Date("Sat Jul 24 12:40:48 UTC+0430 2021");
     var lv, ie = null;
 
     var passwords = [
@@ -2808,7 +2808,7 @@ v\:* {
     <div class="gameLayer" id="mainMenu_layer" style="display:none;">
         <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="initGame()">
             <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
-            <v:textbox v-text-anchor="middle-center">Start Game</v:textbox>
+            <v:textbox v-text-anchor="middle-center">Start</v:textbox>
         </v:roundrect>
         <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="addToGD()">
             <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
