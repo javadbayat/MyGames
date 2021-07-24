@@ -1,0 +1,3249 @@
+<!-- brickshooter -->
+<html xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+<title>Brick Shooter</title>
+<meta name="author" content="Javad Bayat">
+<meta http-equiv="content-type" content="text/html; charset = UTF-8">
+<meta http-equiv="MSThemeCompatible" content="Yes">
+<style type="text/css">
+v\:* {
+    behavior: url(#default#VML);
+    display: inline-block;
+}
+
+.gameLayer {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+}
+
+.brick, #cover_object, #boundary_object, .bombGroup {
+    position: absolute;
+    z-index: 1;
+}
+
+.bombGroup v\:shape {
+    position: absolute;
+    width: 30;
+    height: 40;
+}
+
+.prize {
+    position: absolute;
+    z-index: 1;
+    left: 60px;
+    top: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.prize v\:oval {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20;
+    height: 20;
+}
+    
+.prizeImage {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.prizeImage v\:oval {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20;
+    height: 20;
+}
+
+.darkness {
+    position: absolute;
+    z-index: 2;
+    filter: progid:DXImageTransform.Microsoft.Fade(duration=2);
+}
+
+#exitBtn_object, #pauseBtn_object, #resumeBtn_object, #mainMenu_layer v\:roundrect {
+    cursor: hand;
+}
+
+#mainMenu_layer v\:roundrect {
+    filter: progid:DXImageTransform.Microsoft.Stretch(duration=2);
+}
+
+#pauseBtn_object v\:rect {
+    position: absolute;
+    top: 0;
+    width: 2;
+    height: 2;
+}
+
+#infobar {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    border-bottom: 1pt solid green;
+    z-index: 2;
+}
+
+#pauseScreen_object {
+    filter: progid:DXImageTransform.Microsoft.BasicImage(opacity=0.5);
+    position: absolute;
+    z-index: 2;
+}
+
+#pauseText_object {
+    color: red;
+    font-size: 20px;
+    position: absolute;
+    z-index: 2;
+}
+
+#player_object {
+    z-index: 2;
+    position: absolute;
+}
+
+#shot_object, #tubeBody_object, #tubeHead_object, #tick_object {
+    z-index: 2;
+    position: absolute;
+}
+
+#cube_object {
+    z-index: 2;
+    position: absolute;
+}
+
+#gameOverBox v\:textbox {
+    color: red;
+    font-size: 25px;
+}
+
+#bonusInfo_object {
+    position: absolute;
+    z-index: 2;
+    background-color: cyan;
+    overflow: auto;
+    padding: 5px;
+    filter: progid:DXImageTransform.Microsoft.Glow(strength=15, color=#00ff00)
+            progid:DXImageTransform.Microsoft.Iris(irisStyle=STAR, duration=3)
+            progid:DXImageTransform.Microsoft.RandomDissolve(duration=3);
+}
+
+#btnGotIt {
+    position: relative;
+}
+
+#infoNewHeart_object {
+    position: absolute;
+    z-index: 2;
+    filter: RevealTrans(duration=2, transition=6);
+}
+
+#mouth_object {
+    position: absolute;
+    z-index: 1;
+}
+
+#mouth_object v\:shape {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+#txtPassword {
+    position: absolute;
+    color: red;
+    border: 4px double green;
+}
+
+#helpContent {
+    width: 100%;
+    height: 80%;
+    overflow: scroll;
+    background-color: #b0ffb0;
+    border: 10px groove cyan;
+    margin: 8px;
+    padding: 4px;
+    font-size: larger;
+}
+
+#help_layer button {
+    width: 4em;
+    margin: 3px;
+    border: 2px dashed #7bf0a2;
+    cursor: hand;
+}
+
+#help_layer button.ActionButton {
+    background-color: #f89b56;
+}
+
+#help_layer button.NavigationButton {
+    background-color: #ceb4f1;
+}
+
+#helpButton_object {
+    cursor: hand;
+}
+
+#helpButton_object v\:textbox {
+    color: green;
+    text-align: center;
+}
+
+#about_layer {
+    padding: 10px;
+}
+
+#updateFailure_stage {
+    color: red;
+}
+
+#restartGame_stage, #updateUnavailable_stage {
+    color: green;
+}
+
+#updateSection {
+    width: 50%;
+    margin-top: 15px;
+}
+</style>
+<hta:application ID="app"
+    applicationname="Brick Shooter"
+    version="1.0"
+    caption="no"
+    icon="images\icon.ico"
+    showintaskbar="Yes"
+    singleinstance="Yes"
+    sysmenu="Yes"
+    windowstate="Maximize"
+    innerborder="Off"
+    selection="No"
+    contextmenu="No"
+    scroll="No" />
+<script language="javascript">
+    var myScreenW = 1024, myScreenH = 768, realScreenW = screen.width, realScreenH = screen.height;
+    var gd = null;
+    var left = 37, right = 39, up = 38, down = 40, NULL = 0, vague = -1;
+    var currentLayer = null;
+    var paused = false;
+    var prize_heart = 0, prize_ultrasize = 1, prize_superPower = 2, prize_mouseControl = 3, prize_brickRemover = 4, prize_brickChanger = 5, prize_cover = 6;
+    var brick_brown = 0, brick_green = 1, brick_bouncy = 2, brick_stone = 3, brick_strong = 4, brick_risky = 5;
+    var level_bonus = 8;
+    var gameInitialized = false;
+    var cv = "1.0", bt = new Date("Sat Jul 24 12:40:48 UTC+0430 2021");
+    var lv, ie = null;
+
+    var passwords = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [27, 9, 4, 34, 11, 1, 12, 16, 5, 1],
+            [15, 32, 25, 21, 7, 27, 10, 3, 32, 31],
+            [25, 18, 1, 21, 16, 2, 11, 6, 10, 12],
+            [9, 15, 18, 11, 9, 22, 2, 7, 33, 27],
+            [16, 14, 29, 34, 3, 11, 27, 13, 9, 20],
+            [24, 22, 9, 1, 3, 6, 28, 15, 19, 33],
+            [6, 18, 23, 12, 8, 30, 1, 30, 6, 14],
+            [21, 3, 18, 7, 13, 7, 11, 26, 1, 2],
+            [15, 5, 23, 5, 22, 28, 29, 20, 10, 13],
+            [13, 26, 1, 21, 1, 12, 19, 16, 9, 19]
+    ];
+    
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var xmldoc = new ActiveXObject("Microsoft.XMLDOM");
+    var downloadQueue = {};
+    
+    String.prototype.startsWith = new Function("str", "return(this.substr(0, str.length) === str);");
+    Number.prototype.toFileSize = function () {
+        var divideby;
+        var tagg;
+        if (this / 1024 < 1) {
+            divideby = 1;
+            tagg = "bytes";
+        }
+        else if (this / (1024 * 1024) < 1) {
+            divideby = 1024;
+            tagg = "KB";
+        }
+        else if (this / (1024 * 1024 * 1024) < 1) {
+            divideby = 1024 * 1024;
+            tagg = "MB";
+        }
+        else if (this / (1024 * 1024 * 1024 * 1024) < 1) {
+            divideby = 1024 * 1024 * 1024;
+            tagg = "GB";
+        }
+        var i = this / divideby;
+        var x = Number(Math.floor(i * 100) / 100);
+        return x.toFixed(2) + " " + tagg;
+    };
+
+    var objects = {
+        player:{x:462, y:730, w:100, h:20, lives:4, score:0, level:1, displayInfo:function() {
+            var liv = g("lives");
+            var sco = g("score");
+            var lev = g("level");
+            
+            sco.innerText = objects.player.score;
+            lev.innerText = (objects.player.level == level_bonus) ? "Bonus" : objects.player.level;
+            if (objects.player.level > level_bonus)
+                lev.innerText--;
+            liv.innerText = "";
+            for (var i = 0;i < objects.player.lives;i++)
+            {
+                var lifeSign = document.createElement("v:shape");
+                lifeSign.type = "#heart";
+                lifeSign.style.width = mapCoordX(20);
+                lifeSign.style.height = mapCoordY(20);
+                lifeSign.style.marginLeft = 4;
+                liv.appendChild(lifeSign);
+            }
+        }, px:4, ms:10, blocked:false, currentDirection:NULL, leftInterval:NULL, rightInterval:NULL, startMoving:function() {
+            if (event.repeat || (objects.player.currentDirection == vague))
+                return;
+            
+            switch (event.keyCode)
+            {
+            case left :
+                if (objects.player.currentDirection)
+                    return objects.player.enableVagueCondition();
+                objects.player.currentDirection = left;
+                if (!objects.player.blocked)
+                    objects.player.leftInterval = setInterval(objects.player.nudgeLeft, objects.player.ms);
+                break;
+            case right :
+                if (objects.player.currentDirection)
+                    return objects.player.enableVagueCondition();
+                objects.player.currentDirection = right;
+                if (!objects.player.blocked)
+                    objects.player.rightInterval = setInterval(objects.player.nudgeRight, objects.player.ms);
+                break;
+            case up :
+                if (objects.boundary.on)
+                    objects.boundary.jump();
+                break;
+            }
+        }, stopMoving:function() {
+            switch (event.keyCode)
+            {
+            case left :
+                if (objects.player.currentDirection == vague)
+                    objects.player.disableVagueCondition(right);
+                else
+                {
+                    clearInterval(objects.player.leftInterval);
+                    objects.player.currentDirection = NULL;
+                }
+                break;
+            case right :
+                if (objects.player.currentDirection == vague)
+                    objects.player.disableVagueCondition(left);
+                else
+                {
+                    clearInterval(objects.player.rightInterval);
+                    objects.player.currentDirection = NULL;
+                }
+                break;
+            }
+        }, enableVagueCondition:function() {
+            if (objects.player.currentDirection == left)
+                clearInterval(objects.player.leftInterval);
+            else
+                clearInterval(objects.player.rightInterval);
+            objects.player.currentDirection = vague;
+            if (!objects.player.blocked)
+                player.fillcolor = "red";
+        }, disableVagueCondition:function(direction) {
+            objects.player.currentDirection = direction;
+            if (!objects.player.blocked)
+            {
+                player.fillcolor = objects.player.mouseControlMode ? "#00ff99" : "#f7c42b";
+                if (direction == left)
+                    objects.player.leftInterval = setInterval(objects.player.nudgeLeft, objects.player.ms);
+                else
+                    objects.player.rightInterval = setInterval(objects.player.nudgeRight, objects.player.ms);
+            }
+        }, nudgeLeft:function() {
+            var x = objects.player.x - objects.player.px;
+            if (x >= 0)
+            {
+                objects.player.handleBoundary(x);
+                
+                player.style.left = mapCoordX(objects.player.x = x);
+                if (objects.player.isHoldingShot)
+                    shot.style.left = mapCoordX(objects.shot.x = x + objects.player.w / 2 - 10);
+            }
+        }, nudgeRight:function() {
+            var x = objects.player.x + objects.player.px;
+            if ((x + objects.player.w) <= 1024)
+            {
+                objects.player.handleBoundary(x);
+                
+                player.style.left = mapCoordX(objects.player.x = x);
+                if (objects.player.isHoldingShot)
+                    shot.style.left = mapCoordX(objects.shot.x = x + objects.player.w / 2 - 10);
+            }
+        }, block:function() {
+            switch (objects.player.currentDirection)
+            {
+            case left :
+                clearInterval(objects.player.leftInterval);
+                break;
+            case right :
+                clearInterval(objects.player.rightInterval);
+                break;
+            case vague :
+                player.fillcolor = objects.player.mouseControlMode ? "#00ff99" : "#f7c42b";
+                break;
+            }
+            
+            objects.player.blocked = true;
+        }, unblock:function() {
+            objects.player.blocked = false;
+            
+            switch (objects.player.currentDirection)
+            {
+            case left :
+                objects.player.leftInterval = setInterval(objects.player.nudgeLeft, objects.player.ms);
+                break;
+            case right :
+                objects.player.rightInterval = setInterval(objects.player.nudgeRight, objects.player.ms);
+                break;
+            case vague :
+                player.fillcolor = "red";
+                break;
+            }
+        }, isHoldingShot:true, loseLife:function() {
+            clearInterval(objects.shot.interval);
+            objects.shot.interval = NULL; //!!!
+            
+            if (objects.player.level != level_bonus)
+            {
+                objects.player.lives--;
+                objects.player.displayInfo();
+                
+                if (objects.player.ultrasizeLevel)
+                {
+                    player.style.width = mapCoordX(objects.player.w = 100);
+                    objects.player.ultrasizeLevel = 0;
+                }
+                
+                if (objects.shot.hasSuperPower)
+                {
+                    shot.fillcolor = "#0080ff";
+                    objects.shot.hasSuperPower = 0;
+                }
+                
+                if (objects.player.mouseControlMode)
+                {
+                    document.onmousemove = null;
+                    if (objects.player.currentDirection != vague)
+                        player.fillcolor = "#f7c42b";
+                    objects.player.mouseControlMode = false;
+                }
+            }
+            
+            if (objects.player.lives)
+            {
+                shot.style.left = mapCoordX(objects.shot.x = objects.player.x + objects.player.w / 2 - 10);
+                shot.style.top = mapCoordY(objects.shot.y = 710);
+                objects.player.isHoldingShot = true;
+            }
+            else
+                gameOver();
+        }, ultrasizeLevel:0, mouseControlMode:false, moveByMouse:function() {
+            if (objects.player.currentDirection)
+                return;
+            
+            var x = Math.floor(event.x / realScreenW * myScreenW) - objects.player.w / 2;
+            if (x < 0)
+                x = 0;
+            if ((x + objects.player.w) > myScreenW)
+                x = myScreenW - objects.player.w;
+            
+            player.style.left = mapCoordX(objects.player.x = x);
+            if (objects.player.isHoldingShot)
+                shot.style.left = mapCoordX(objects.shot.x = x + objects.player.w / 2 - 10);
+        }, isCrossingBoundary:false, handleBoundary:function(x) {
+            if (objects.boundary.on)
+            {
+                if ((x < objects.boundary.lineX) && (objects.boundary.lineX < (x + objects.player.w)))
+                {
+                    if (!objects.player.isCrossingBoundary)
+                    {
+                        objects.boundary.illegalEntry();
+                        objects.player.isCrossingBoundary = true;
+                    }
+                }
+                else
+                    objects.player.isCrossingBoundary = false;
+            }
+        }}, 
+        pauseScreen:{pause:function() {
+            if ((!objects.player.currentDirection) && (!objects.cover.isMoving))
+            {
+                document.onkeydown = document.onkeyup = document.onmousemove = null;
+                if (!objects.player.isHoldingShot)
+                    clearInterval(objects.shot.interval);
+                if (objects.bonus.timerInterval)
+                    clearInterval(objects.bonus.timerInterval);
+                objects.prize.pause();
+                if (objects.player.level == 11)
+                    objects.bomb.pause();
+                pauseScreen.style.display = "";
+                pauseText.style.display = "";
+                pauseBtn.style.display = "none";
+                resumeBtn.style.display = "";
+                g("txtPassword2").innerText = "Password: " + objects.brick.levels[objects.player.level - 1].password.toUpperCase();
+                paused = true;
+            }
+        }, resume:function() {
+            document.onkeydown = objects.player.startMoving;
+            document.onkeyup = objects.player.stopMoving;
+            if (objects.player.mouseControlMode)
+                document.onmousemove = objects.player.moveByMouse;
+            else if (objects.cover.on)
+                document.onmousemove = objects.cover.move;
+            pauseScreen.style.display = "none";
+            pauseText.style.display = "none";
+            if (!objects.player.isHoldingShot)
+                objects.shot.interval = setInterval(objects.shot.nudge, objects.shot.ms);
+            if (objects.bonus.timerInterval)
+                objects.bonus.timerInterval = setInterval(objects.bonus.tick, 1000);
+            objects.prize.resume();
+            if (objects.player.level == 11)
+                objects.bomb.resume();
+            resumeBtn.style.display = "none";
+            pauseBtn.style.display = "";
+            paused = false;
+        }},
+        shot:{x:502, y:710, w:20, h:20, px:3, ms:10, interval:NULL, angle:0, startMoving:function() {
+            objects.shot.angle = 25 + Math.round(Math.random() * 40);
+            if (event)
+                if (event.shiftKey)
+                    objects.shot.angle += 90;
+            objects.shot.basePointX = objects.shot.x;
+            objects.shot.basePointY = objects.shot.y;
+            objects.shot.distance = objects.shot.nHitStone = 0;
+            objects.shot.interval = setInterval(objects.shot.nudge, objects.shot.ms);
+            objects.player.isHoldingShot = false;
+        }, nudge:function() {
+            if (!objects.shot.interval)
+                return; //!!!
+            
+            with (Math)
+            {
+                var a = objects.shot.angle;
+                var radians = a * PI / 180;
+                var x = floor(objects.shot.basePointX + cos(radians) * (objects.shot.distance += objects.shot.px));
+                var y = floor(objects.shot.basePointY - sin(radians) * objects.shot.distance);
+                if (x < 0)
+                {
+                    if (a > 180)
+                    {
+                        if (y < 748)
+                            y++;
+                        objects.shot.setAngle(x = 0, y, 540 - a);
+                    }
+                    else
+                    {
+                        if (y > 0)
+                            y--;
+                        objects.shot.setAngle(x = 0, y, 180 - a);
+                    }
+                }
+                else if (x > 1004)
+                {
+                    if (a < 90)
+                    {
+                        if (y > 0)
+                            y--;
+                        objects.shot.setAngle(x = 1004, y, 180 - a);
+                    }
+                    else
+                    {
+                        if (y < 748)
+                            y++;
+                        objects.shot.setAngle(x = 1004, y, 540 - a);
+                    }
+                }
+                else if (y < 30)
+                {
+                    if (a < 90)
+                    {
+                        if (x < 1004)
+                            x++;
+                    }
+                    else
+                    {
+                        if (x > 0)
+                            x--;
+                    }
+                    
+                    objects.shot.setAngle(x, y = 30, 360 - a);
+                }
+                else if (y > 748)
+                {
+                    y = 748;
+                    return objects.player.loseLife();
+                }
+                
+                var l = mapCoordX(x), r = mapCoordX(x + 20), t = mapCoordY(y), b = mapCoordY(y + 20);
+                var elem1 = document.elementFromPoint(l, t);
+                var elem2 = document.elementFromPoint(r, t);
+                var elem3 = document.elementFromPoint(l, b);
+                var elem4 = document.elementFromPoint(r, b);
+                var elemAhead;
+                if (((elemAhead = elem1).shotCollision) || ((elemAhead = elem2).shotCollision) || ((elemAhead = elem3).shotCollision) || ((elemAhead = elem4).shotCollision))
+                {
+                    switch (elemAhead.shotCollision)
+                    {
+                    case 1 : //Collision with player
+                        if (y >= 720)
+                            objects.shot.setAngle(x, y, (a <= 180) ? a + 180 : a - 180);
+                        else
+                            objects.shot.setAngle(x, y, 360 - a);
+                        objects.shot.nHitStone = 0;
+                        break;
+                    case 2 : //Collision with brick
+                        var p = elemAhead.extraData.prize;
+                        if (p)
+                        {
+                            p.extraData.interval = setInterval("objects.prize.nudge(" + (p.extraData.id) + ")", objects.prize.ms);
+                            elemAhead.extraData.prize = null;
+                        }
+                        
+                        if (elemAhead.extraData.type == brick_strong)
+                        {
+                            if (elemAhead.extraData.isCracked)
+                            {
+                                elemAhead.extraData.isCracked.removeNode();
+                                elemAhead.removeNode();
+                                objects.shot.setAngle(x, y, 360 - a);
+                            }
+                            else if (objects.shot.hasSuperPower)
+                                elemAhead.removeNode();
+                            else
+                            {
+                                objects.brick.crack(elemAhead);
+                                objects.brick.nBricksLeft++;
+                                objects.shot.setAngle(objects.shot.x, objects.shot.y, (a <= 180) ? a + 180 : a - 180);
+                            }
+                            
+                            g("score").innerText = objects.player.score += 50;
+                        }
+                        else if (elemAhead.extraData.type == brick_stone)
+                        {
+                            if (objects.player.level == 11)
+								objects.mouth.setBlood(objects.mouth.bloodPercentage - 2);
+							
+							if (objects.shot.hasHitStone == 1)
+                            {
+                                objects.shot.setAngle(objects.shot.x, objects.shot.y, (a <= 180) ? a + 180 : a - 180);
+                                objects.shot.hasHitStone = 2;
+                            }
+                            else if (objects.shot.hasHitStone == 2)
+                                objects.shot.setAngle(objects.shot.x, objects.shot.y, (a <= 270) ? a + 90 : a - 270);
+                            else
+                            {
+                                objects.shot.setAngle(objects.shot.x, objects.shot.y, 360 - a);
+                                objects.shot.hasHitStone = 1;
+                            }
+                            
+                            if (++(objects.shot.nHitStone) == 40)
+                            {
+                                if ((!objects.player.currentDirection) &&
+                                confirm("Seems like you're stuck! The shot keeps hitting the stones in a particular area and has no way to get out of that area. Do you want to throw the shot again?"))
+                                    objects.shot.stopMoving();
+                                objects.shot.nHitStone = 0;
+                            }
+                            
+                            return;
+                        }
+                        else if (elemAhead.extraData.type == brick_risky)
+                        {
+                            if (objects.shot.hasSuperPower)
+                            {
+                                elemAhead.removeNode();
+                                objects.brick.nBricksLeft++;
+                            }
+                            else
+                            {
+                                elemAhead.removeNode();
+                                
+                                if (objects.player.score < 500)
+                                    g("score").innerText = objects.player.score = 0;
+                                else
+                                    g("score").innerText = objects.player.score -= 500;
+                                
+                                return objects.shot.stopMoving();
+                            }
+                        }
+                        else
+                        {
+                            elemAhead.removeNode();
+                            
+                            if (elemAhead.extraData.type == brick_bouncy)
+                            {
+                                objects.shot.setAngle(x, y, (a <= 180) ? a + 180 : a - 180);
+                                g("score").innerText = objects.player.score += 100;
+                            }
+                            else
+                            {                
+                                objects.shot.setAngle(x, y, 360 - a);
+                                g("score").innerText = objects.player.score += 50;
+                            }
+                        }
+                        
+                        if (objects.shot.hasSuperPower)
+                        {
+                            objects.shot.setAngle(x, y, a);
+                            if (--(objects.shot.hasSuperPower) == 0)
+                                shot.fillcolor = "#0080ff";
+                        }
+                        
+                        if (--(objects.brick.nBricksLeft) == 0)
+                        {
+                            var nextLevel = objects.brick.levels[objects.player.level++];
+                            if (nextLevel)
+                            {
+                                objects.prize.renewInstances();
+                                nextLevel.init();
+                                objects.player.displayInfo();
+                                return objects.shot.stopMoving();
+                            }
+                            else
+                                winAllLevels();
+                        }
+                        
+                        objects.shot.nHitStone = 0;
+                        
+                        break;
+                    case 3 : //Collision with cover
+                        objects.shot.isOnCover = true;
+                        break;
+                    case 4 : //Collision with bomb
+                        var bombGroup = elemAhead.parentElement;
+                        if (!bombGroup.extraData.status)
+                        {
+                            bombGroup.extraData.dInterval = setInterval("objects.bomb.nudge(" + (bombGroup.extraData.id) + ")", objects.bomb.ms);
+                            bombGroup.extraData.status = 1;
+                        }
+                        
+                        break;
+                    }
+                }
+                else
+                    objects.shot.isOnCover = false;
+                
+                objects.shot.hasHitStone = 0;
+                objects.shot.x = x;
+                objects.shot.y = y;
+                shot.style.left = l;
+                shot.style.top = t;
+            }
+        }, stopMoving:function() {
+            clearInterval(objects.shot.interval);
+            objects.shot.interval = NULL; //!!!
+            shot.style.left = mapCoordX(objects.shot.x = objects.player.x + objects.player.w / 2 - 10);
+            shot.style.top = mapCoordY(objects.shot.y = 710);
+            objects.player.isHoldingShot = true;
+        }, basePointX:NULL, basePointY:NULL, distance:NULL, setAngle:function(x, y, a) {
+            objects.shot.angle = a;
+            objects.shot.basePointX = x;
+            objects.shot.basePointY = y;
+            objects.shot.distance = 0;
+        }, hasSuperPower:0, hasHitStone:0, nHitStone:0, isOnCover:false}, 
+        brick:{nBricksLeft:NULL,  
+            levels:[
+            {brownBricks:[[62, 220], [122, 220], [182, 220], [242, 220], [302, 220], [662, 220], [722, 220], [782, 220], [842, 220], [902, 220], [482, 220],
+                          [482, 140], [482, 120],
+                          [362, 180], [362, 160], [362, 140], [362, 120], [362, 100],
+                          [262, 200], [262, 180], [262, 160], [262, 140],
+                          [162, 200], [162, 180],
+                          [602, 180], [602, 160], [602, 140], [602, 120], [602, 100],
+                          [702, 200], [702, 180], [702, 160], [702, 140],
+                          [802, 200], [802, 180]], 
+            greenBricks:[[82, 200], [102, 180], [122, 160], [182, 160], [202, 140], [222, 120], [282, 120], [302, 100], [322, 80],
+                         [882, 200], [862, 180], [842, 160], [782, 160], [762, 140], [742, 120], [682, 120], [662, 100], [642, 80],
+                         [382, 80], [442, 100], [522, 100], [582, 80],
+                         [362, 200], [422, 180], [482, 160], [542, 180], [602, 200], [362, 240], [422, 260], [482, 280], [542, 260], [602, 240]], 
+            init:function() {
+                var bsLayer = g("brickshooter_layer");
+                var bba = objects.brick.levels[0].brownBricks;
+                var gba = objects.brick.levels[0].greenBricks;
+                objects.brick.nBricksLeft = bba.length + gba.length;
+                for (var i = 0;i < bba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(bba[i][0]);
+                    brickElem.style.top = mapCoordY(bba[i][1]);
+                    brickElem.style.width = mapCoordX(60);
+                    brickElem.style.height = mapCoordY(20);
+                    brickElem.fillcolor = "#996600";
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:brick_brown};
+                    bba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                for (var i = 0;i < gba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(gba[i][0]);
+                    brickElem.style.top = mapCoordY(gba[i][1]);
+                    brickElem.style.width = mapCoordX(60);
+                    brickElem.style.height = mapCoordY(20);
+                    brickElem.fillcolor = "#00ff99";
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:brick_green};
+                    gba[i] = bsLayer.appendChild(brickElem);
+                }
+            }},
+            {bricks:[[2, 130], [62, 130], [122, 130], [182, 130], [242, 130], [302, 130], [362, 130], [422, 130], [482, 130], [542, 130], [602, 130], [662, 130], [722, 130], [782, 130], [842, 130], [902, 130], [962, 130], [32, 110], [92, 110], [152, 110], [212, 110], [272, 110], [332, 110], [392, 110], [452, 110], [512, 110], [572, 110], [632, 110], [692, 110], [752, 110], [812, 110], [872, 110], [932, 110], [62, 90], [122, 90], [182, 90], [242, 90], [302, 90], [362, 90], [422, 90], [482, 90], [542, 90], [602, 90], [662, 90], [722, 90], [782, 90], [842, 90], [902, 90], [92, 70], [152, 70], [212, 70], [272, 70], [332, 70], [392, 70], [452, 70], [512, 70], [572, 70], [632, 70], [692, 70], [752, 70], [812, 70], [872, 70], [122, 50], [182, 50], [242, 50], [302, 50], [362, 50], [422, 50], [482, 50], [542, 50], [602, 50], [662, 50], [722, 50], [782, 50], [842, 50], [152, 30], [212, 30], [272, 30], [332, 30], [392, 30], [452, 30], [512, 30], [572, 30], [632, 30], [692, 30], [752, 30], [812, 30]],
+            init:function() {
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[1].bricks;
+                var setGreen = false;
+                for (var i = 0;i < 87;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(60);
+                    brickElem.style.height = mapCoordY(20);
+                    brickElem.fillcolor = setGreen ? "#00ff99" : "#996600";
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:setGreen ? brick_green : brick_brown};
+                    ba[i] = bsLayer.appendChild(brickElem);
+                    setGreen = !setGreen;
+                }
+                
+                objects.brick.nBricksLeft = 87;
+            }},
+            {brownBricks:[[220, 230], [220, 250], [220, 270], [220, 290], [220, 310], [220, 330], [220, 350], [220, 370], [220, 390], [220, 410]],
+            greenBricks:[[20, 210, 1], [35, 230], [50, 250], [65, 270, 1], [80, 290], [95, 310], [140, 290, 1], [150, 270], [160, 250], [280, 250], [290, 270], [300, 290, 1], [360, 290], [345, 310], [375, 270, 1], [390, 250], [405, 230], [420, 210, 1], [400, 190], [380, 170, 1], [360, 150], [340, 130, 1], [320, 110], [300, 90, 1], [280, 70], [40, 190], [60, 170, 1], [80, 150], [100, 130, 1], [120, 110], [140, 90, 1], [160, 70], [220, 50, 1],
+                         [100, 210], [160, 210], [220, 210], [280, 210], [340, 210],
+                         [95, 230], [160, 230], [280, 230], [345, 230],
+                         [100, 190], [160, 190], [220, 190], [280, 190], [340, 190],
+                         [160, 170], [220, 170], [280, 170],
+                         [160, 150], [220, 150], [280, 150],
+                         [160, 130], [220, 130], [280, 130],
+                         [220, 110], [220, 90], [220, 70]],
+            init:function() {
+                var bsLayer = g("brickshooter_layer");
+                var bba = objects.brick.levels[2].brownBricks;
+                var gba = objects.brick.levels[2].greenBricks;
+                var nbb = bba.length, ngb = gba.length;
+                objects.brick.nBricksLeft = (nbb + ngb) * 2;
+                for (var i = 0;i < nbb;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    var brickElem2 = document.createElement("v:rect");
+                    brickElem.shotCollision = brickElem2.shotCollision = 2;
+                    brickElem.className = brickElem2.className = "brick";
+                    brickElem.style.left = mapCoordX(bba[i][0]);
+                    brickElem2.style.left = mapCoordX(bba[i][0] + 520);
+                    brickElem.style.top = brickElem2.style.top = mapCoordY(bba[i][1]);
+                    brickElem.style.width = brickElem2.style.width = mapCoordX(60);
+                    brickElem.style.height = brickElem2.style.height = mapCoordY(20);
+                    brickElem.fillcolor = brickElem2.fillcolor = "#996600";
+                    brickElem.strokecolor = brickElem2.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = brickElem2.strokeweight = "1pt";
+                    brickElem.extraData = {type:brick_brown};
+                    brickElem2.extraData = {type:brick_brown};
+                    bba[i] = bsLayer.appendChild(brickElem);
+                    bba.push(bsLayer.appendChild(brickElem2));
+                }
+                
+                for (var i = 0;i < ngb;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    var brickElem2 = document.createElement("v:rect");
+                    brickElem.shotCollision = brickElem2.shotCollision = 2;
+                    brickElem.className = brickElem2.className = "brick";
+                    brickElem.style.left = mapCoordX(gba[i][0]);
+                    brickElem2.style.left = mapCoordX(gba[i][0] + 520);
+                    brickElem.style.top = brickElem2.style.top = mapCoordY(gba[i][1]);
+                    brickElem.style.width = brickElem2.style.width = mapCoordX(60);
+                    brickElem.style.height = brickElem2.style.height = mapCoordY(20);
+                    brickElem.fillcolor = brickElem2.fillcolor = gba[i][2] ? "#cc66ff" : "#00ff99";
+                    brickElem.strokecolor = brickElem2.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = brickElem2.strokeweight = "1pt";
+                    brickElem.extraData = {type:gba[i][2] ? brick_bouncy : brick_green};
+                    brickElem2.extraData = {type:gba[i][2] ? brick_bouncy : brick_green};
+                    gba[i] = bsLayer.appendChild(brickElem);
+                    gba.push(bsLayer.appendChild(brickElem2));
+                }
+                
+                gba[44].extraData.prize = objects.prize.create(prize_heart, 240, 190);
+                gba[103].extraData.prize = objects.prize.create(prize_ultrasize, 760, 190);
+            }},
+            {bricks:[[65, 330], [105, 310], [165, 290], [205, 270], [265, 260], [325, 270], [385, 280], [445, 280], [425, 260], [405, 240], [385, 220], [365, 200], [345, 180], [325, 160], [315, 140], [325, 120], [345, 100], [365, 80], [395, 60], [455, 60], [425, 40], [485, 80], [545, 90], [605, 100], [645, 120], [565, 145], [625, 140], [505, 160], [490, 180], [500, 200], [520, 220], [540, 240], [560, 260], [580, 280], [600, 300], [620, 320], [640, 340], [630, 360], [620, 380], [600, 400], [580, 420], [560, 440], [530, 460], [500, 480], [440, 490], [380, 490], [320, 480], [260, 470], [220, 450], [180, 430], [140, 410], [100, 390], [60, 370], [20, 350],
+                     [80, 350, 1], [140, 350, 1], [200, 350, 4], [260, 350, 4], [320, 350, 4], [120, 370, 1], [180, 370, 4], [240, 370, 4], [300, 370, 4, 80], [160, 390, 1], [220, 390, 4], [280, 390, 4, 100], [200, 410, 1], [260, 410, 4], [320, 410, 4], [240, 430, 1], [300, 430, 4, 80], [280, 450, 1, 100], [125, 330, 1], [185, 330, 1], [245, 330, 4], [305, 330, 4, 75], [165, 310, 1], [225, 310, 1], [285, 310, 1, 95], [225, 290, 1], [285, 290, 1, 100],
+                     [380, 470, 1], [380, 450, 4], [380, 430, 4], [380, 410, 4], [380, 390, 4], [380, 370, 4], [380, 350, 4], [380, 330, 4], [380, 310, 1], [440, 470, 1], [440, 450, 4], [440, 430, 4], [440, 410, 4], [440, 390, 4], [440, 370, 4], [440, 350, 4], [440, 330, 4], [440, 310, 1],
+                     [500, 460, 1, 30], [500, 440, 1], [500, 420, 1, 80], [500, 400, 1, 100], [500, 380, 1], [560, 380, 1], [500, 360, 1], [560, 360, 1, 70], [500, 340, 1], [560, 340, 1, 80], [500, 320, 1], [560, 320, 1], [500, 300, 1, 100], 
+                     [505, 280, 1, 80], [485, 260, 1, 80], [465, 240, 1, 80], [445, 220, 1, 80], [425, 200, 1, 80], [405, 180, 1, 85], [385, 160, 1], [445, 160, 1], [505, 140, 4], [485, 100, 4], [585, 120, 4], [525, 120, 4], [415, 140, 4], [385, 120, 1], [445, 120, 1, 80], [405, 100, 1, 80], [425, 80, 1],
+                     [830, 230], [830, 210], [830, 250], [770, 190, 1], [770, 170, 1], [770, 150, 1], [890, 190, 1], [890, 170, 1], [890, 150, 1], [830, 130], [830, 110], [830, 90], [770, 70, 4], [770, 50, 4], [770, 30, 4], [890, 70, 4], [890, 50, 4], [890, 30, 4], [770, 270, 4], [770, 290, 4], [770, 310, 4], [890, 270, 4], [890, 290, 4], [890, 310, 4], [830, 330], [830, 350], [830, 370], [770, 390, 1], [770, 410, 1], [770, 430, 1], [890, 390, 1], [890, 410, 1], [890, 430, 1], [830, 450], [830, 470], [830, 490]],
+            init:function() {
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[3].bricks;
+                objects.brick.nBricksLeft = ba.length;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(ba[i][3] ? ba[i][3] : 60);
+                    brickElem.style.height = mapCoordY(20);
+                    brickElem.fillcolor = ba[i][2] ? ((ba[i][2] == brick_strong) ? "#a489f3" : "#00ff99") : "#996600";
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown, crackX:mapCoordX(ba[i][0] + (ba[i][3] ? ba[i][3] : 60) / 2 - 7), crackY:mapCoordY(ba[i][1])};
+                    if (ba[i][2] == brick_strong)
+                        brickElem.extraData.isCracked = null;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+            }},
+            {bricks:[[20, 140], [20, 160, 2], [20, 180], [20, 200, 2], [20, 220], [20, 240, 2], [20, 260], [20, 280, 2], [20, 300], [80, 160], [80, 180, 2], [80, 200], [80, 220, 2], [80, 240], [80, 260, 2], [80, 280], [140, 180], [140, 200, 2], [140, 220], [140, 240, 2], [140, 260], [200, 200], [200, 220, 2], [200, 240],
+                     [260, 180], [260, 260], [290, 160], [290, 280], [320, 140], [320, 300], [350, 120], [350, 320], [380, 100], [380, 340], [440, 90], [440, 350], [500, 90], [500, 350], [560, 100], [560, 340], [620, 110], [620, 330], [680, 130], [680, 310], [720, 150], [720, 290], [760, 170], [760, 270], [730, 190], [730, 250], [670, 200], [670, 240], [640, 220],
+                     [320, 180, 1], [320, 260, 1], [380, 180, 4], [380, 260, 4], [440, 180, 1], [440, 260, 1], [500, 180, 4, 90], [500, 260, 4, 90],
+                     [350, 160, 1], [350, 280, 1], [410, 160, 4], [410, 280, 4], [470, 160, 4], [470, 280, 4], [530, 160, 1], [530, 280, 1],
+                     [380, 140, 4], [380, 300, 4], [440, 140, 1], [440, 300, 1], [500, 140, 4], [500, 300, 4],
+                     [410, 120, 4], [410, 320, 1], [470, 120, 1], [470, 320, 4],
+                     [260, 200, 1], [260, 240, 1], [320, 200, 4], [320, 240, 4], [380, 200, 1], [380, 240, 1], [440, 200, 4], [440, 240, 4], [500, 200, 1, 90], [500, 240, 1, 90],
+                     [260, 220, 4], [320, 220, 1], [380, 220, 4], [440, 220, 1], [500, 220, 4, 90], [620, 160, 2],
+                     [960, 350], [900, 330, 2], [840, 310, 1], [900, 290, 4], [960, 270], [900, 250, 2], [840, 230, 1], [900, 210, 4], [960, 190], [900, 170, 2], [840, 150, 1], [900, 130, 4], [960, 110]],
+            init:function() {
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[4].bricks;
+                objects.brick.nBricksLeft = ba.length;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(ba[i][3] ? ba[i][3] : 60);
+                    brickElem.style.height = mapCoordY(20);
+                    brickElem.fillcolor = ba[i][2] ? ((ba[i][2] == brick_strong) ? "#a489f3" : ((ba[i][2] == brick_bouncy) ? "#cc66ff" : "#00ff99")) : "#996600";
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown, crackX:mapCoordX(ba[i][0] + (ba[i][3] ? ba[i][3] : 60) / 2 - 7), crackY:mapCoordY(ba[i][1])};
+                    if (ba[i][2] == brick_strong)
+                        brickElem.extraData.isCracked = null;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                ba[12].extraData.prize = objects.prize.create(prize_mouseControl, 100, 220);
+                ba[94].extraData.prize = objects.prize.create(prize_superPower, 640, 160);
+            }},
+            {bricks:[[0, 30, 1], [60, 40, 1], [100, 60, 1], [140, 80, 1], [180, 100, 1], [220, 120, 1], [250, 140, 1], [280, 160, 1], [310, 180, 1], [340, 200, 1], [360, 220, 1], [380, 240, 1], [0, 50, 1], [10, 70, 1], [10, 90, 1], [20, 110, 1], [20, 130, 1], [30, 150, 1], [30, 170, 1], [40, 190, 1], [40, 210, 1], [50, 230, 1], [50, 250, 1], [60, 270, 1], [60, 290, 1], [70, 310, 1], [70, 330, 1],
+                     [20, 350], [30, 370], [40, 390], [50, 410], [60, 430], [80, 450], [100, 470], [120, 490], [140, 510], [170, 530], [200, 550], [230, 530], [260, 510], [280, 490], [300, 470], [320, 450], [340, 430], [350, 410], [360, 390], [370, 370], [380, 350],
+                     [440, 220, 3], [500, 220, 3], [440, 240, 3], [500, 240, 3], [440, 260, 3], [500, 260, 3], [440, 280, 3], [500, 280, 3], [440, 300, 3], [500, 300, 3], [440, 320, 3], [500, 320, 3], [440, 340, 3], [500, 340, 3], [455, 360, 3, 90], [455, 380, 3, 90], [465, 400, 3, 70], [465, 420, 3, 70], [470, 440, 3],
+                     [440, 200, 3, 30], [530, 200, 3, 30], [430, 180, 3, 30], [540, 180, 3, 30], [420, 160, 3, 30], [550, 160, 3, 30], [410, 140, 3, 30], [560, 140, 3, 30], [400, 120, 3, 30], [570, 120, 3, 30], [390, 100, 3, 30], [580, 100, 3, 30], [380, 80, 3, 30], [590, 80, 3, 30], [370, 60, 3, 30], [600, 60, 3, 30],
+                     [560, 240], [580, 220], [600, 200], [630, 180], [660, 160], [690, 140], [720, 120], [760, 100], [800, 80], [840, 60], [880, 40], [940, 30], [940, 50], [930, 70], [930, 90], [920, 110], [920, 130], [910, 150], [910, 170], [900, 190], [900, 210], [890, 230], [890, 250], [880, 270], [880, 290], [870, 310], [870, 330], 
+                     [920, 350, 1], [910, 370, 1], [900, 390, 1], [890, 410, 1], [880, 430, 1], [860, 450, 1], [840, 470, 1], [820, 490, 1], [800, 510, 1], [770, 530, 1], [740, 550, 1], [710, 530, 1], [680, 510, 1], [660, 490, 1], [640, 470, 1], [620, 450, 1], [600, 430, 1], [590, 410, 1], [580, 390, 1], [570, 370, 1], [560, 350, 1],
+                     [70, 80, 1, 70], [80, 120, 1, 80], [160, 120, 1], [90, 160, 1, 70], [160, 160, 1], [220, 160, 1], [100, 200, 1], [160, 200, 1], [220, 200, 1], [280, 200, 1], [110, 240, 1, 90], [200, 240, 1], [260, 240, 1], [320, 240, 1], [120, 280, 1, 80], [200, 280, 1], [260, 280, 1], [320, 280, 1], [380, 280, 1], [130, 320, 1, 70], [200, 320, 1], [260, 320, 1], [320, 320, 1], [380, 320, 1],
+                     [80, 350], [140, 350], [200, 350], [260, 350], [320, 350], [140, 450], [200, 450], [260, 450], [200, 510], [200, 490], [200, 470], [200, 430], [200, 410], [200, 390], [200, 370], [110, 410, 0, 90], [260, 410, 0, 90], 
+                     [860, 80, 0, 70], [840, 120, 0, 80], [780, 120], [840, 160, 0, 70], [780, 160], [720, 160], [840, 200], [780, 200], [720, 200], [660, 200], [800, 240, 0, 90], [740, 240], [680, 240], [620, 240], [800, 280, 0, 80], [740, 280], [680, 280], [620, 280], [560, 280], [800, 320, 0, 70], [740, 320], [680, 320], [620, 320], [560, 320],
+                     [860, 350, 1], [800, 350, 1], [740, 350, 1], [680, 350, 1], [620, 350, 1], [800, 410, 1, 90], [740, 410, 1], [650, 410, 1, 90], [800, 450, 1], [740, 450, 1], [680, 450, 1], [740, 370, 1], [740, 390, 1], [740, 430, 1], [740, 470, 1], [740, 490, 1], [740, 510, 1]],
+            init:function() {
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[5].bricks;
+                objects.brick.nBricksLeft = 0;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(ba[i][3] ? ba[i][3] : 60);
+                    brickElem.style.height = mapCoordY(20);
+                    
+                    switch (ba[i][2])
+                    {
+                    case brick_green :
+                        brickElem.fillcolor = "#00ff99";
+                        break;
+                    case brick_stone :
+                        brickElem.fillcolor = "#808080";
+                        break;
+                    default :
+                        brickElem.fillcolor = "#996600";
+                    }
+                    
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown};
+                    if (ba[i][2] != brick_stone)
+                        objects.brick.nBricksLeft++;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                ba[209].extraData.prize = objects.prize.create(prize_heart, 760, 430);
+                ba[138].extraData.prize = objects.prize.create(prize_heart, 180, 200);
+                ba[179].extraData.prize = objects.prize.create(prize_brickRemover, 800, 200);
+                ba[166].extraData.prize = objects.prize.create(prize_brickRemover, 220, 430);
+            }},
+            {bricks:[[70, 400, 1, 50], [10, 400, 3], [10, 380, 1], [10, 360, 1], [10, 340, 1], [10, 320, 1], [10, 300, 1], [10, 280, 1], [10, 260, 1], [10, 240, 3], [70, 240, 1], [130, 240, 1], [190, 240, 1],
+                     [250, 240, 3, 30], [260, 220, 4, 30], [270, 200, 4, 30], [280, 180, 4, 30], [290, 160, 3, 30], [300, 140, 4, 30], [310, 120, 4, 30], [320, 100, 4, 30], [330, 80, 3, 30], [360, 80, 4, 30], [390, 80, 4, 30], [420, 80, 4, 30], [450, 80, 4, 30], [480, 80, 3, 30], [510, 80, 4, 30], [540, 80, 4, 30], [570, 80, 4, 30], [600, 80, 4, 30], [630, 80, 3, 30], [640, 100, 4, 30], [650, 120, 4, 30], [660, 140, 4, 30], [670, 160, 3, 30], [680, 180, 4, 30], [690, 200, 4, 30], [700, 220, 4, 30], [710, 240, 3, 30], [480, 100, 4, 30], [480, 120, 4, 30], [480, 140, 4, 30], [480, 160, 3, 30], [480, 180, 4, 30], [480, 200, 4, 30], [480, 220, 4, 30], [480, 240, 3, 30],
+                     [740, 240], [800, 240], [860, 240, 3], [870, 260], [880, 280], [890, 300], [900, 320], [910, 340], [920, 360], [930, 380], [940, 400, 3], [880, 400],
+                     [820, 400, 4], [810, 420, 4], [810, 380, 4], [800, 440, 4], [800, 360, 4], [780, 460, 4], [780, 340, 4], [750, 480, 4], [750, 320, 4], [720, 460, 4], [720, 340, 4], [700, 440, 4], [700, 360, 4], [690, 420, 4], [690, 380, 4], [680, 400, 4],
+                     [620, 400, 3], [560, 400, 3], [500, 400, 3], [440, 400, 3], [380, 400, 3], [320, 400, 3],
+                     [260, 400, 4], [250, 420, 4], [250, 380, 4], [240, 440, 4], [240, 360, 4], [220, 460, 4], [220, 340, 4], [190, 480, 4], [190, 320, 4], [160, 460, 4], [160, 340, 4], [140, 440, 4], [140, 360, 4], [130, 420, 4], [130, 380, 4], [120, 400, 4],
+                     [70, 260, 1], [130, 260, 1], [190, 260, 1], [70, 280, 1], [130, 280, 1], [190, 280, 1], [70, 300, 1], [130, 300, 1], [190, 300, 1], [70, 320, 1], [130, 320, 1], [70, 340, 1], [130, 340, 1, 30], [70, 360, 1, 70], [70, 380, 1],
+                     [250, 260], [310, 260], [370, 260], [430, 260], [250, 280], [310, 280], [370, 280], [430, 280], [250, 300, 3], [310, 300], [370, 300], [430, 300], [250, 320], [310, 320], [370, 320], [430, 320, 3], [280, 340], [340, 340], [400, 340], [460, 340, 0, 30], [300, 360], [360, 360], [420, 360, 0, 70], [310, 380], [370, 380], [430, 380],
+                     [500, 260, 1], [560, 260, 1], [620, 260, 1], [680, 260, 1, 70], [500, 280, 1], [560, 280, 1], [620, 280, 1], [680, 280, 1, 70], [500, 300, 1], [560, 300, 1], [620, 300, 1], [680, 300, 3, 70], [500, 320, 3], [560, 320, 1], [620, 320, 1], [680, 320, 1, 70], [500, 340, 1, 30], [530, 340, 1], [590, 340, 1], [650, 340, 1, 70], [500, 360, 1, 70], [570, 360, 1], [630, 360, 1, 70], [500, 380, 1], [560, 380, 1], [620, 380, 1, 70],
+                     [750, 260], [810, 260], [750, 280, 0, 70], [820, 280], [750, 300, 0, 80], [830, 300], [810, 320, 0, 90], [840, 340, 0, 70], [860, 360], [870, 380]], 
+            init:function() {
+                if (objects.player.mouseControlMode)
+                {
+                    document.onmousemove = null;
+                    if (objects.player.currentDirection != vague)
+                        player.fillcolor = "#f7c42b";
+                    objects.player.mouseControlMode = false;
+                }
+
+                objects.brick.clearStones(objects.brick.levels[5].bricks);
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[6].bricks;
+                objects.brick.nBricksLeft = 0;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(ba[i][3] ? ba[i][3] : 60);
+                    brickElem.style.height = mapCoordY(20);
+                    
+                    switch (ba[i][2])
+                    {
+                    case brick_green :
+                        brickElem.fillcolor = "#00ff99";
+                        break;
+                    case brick_stone :
+                        brickElem.fillcolor = "#808080";
+                        break;
+                    case brick_strong :
+                        brickElem.fillcolor = "#a489f3";
+                        break;
+                    default :
+                        brickElem.fillcolor = "#996600";
+                    }
+                    
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown, crackX:mapCoordX(ba[i][0] + (ba[i][3] ? ba[i][3] : 60) / 2 - 7), crackY:mapCoordY(ba[i][1])};
+                    if (ba[i][2] != brick_stone)
+                        objects.brick.nBricksLeft++;
+                    if (ba[i][2] == brick_strong)
+                        brickElem.extraData.isCracked = null;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                steeringWheel.style.display = "";
+                
+                objects.darkness.display(darkness0, darkness1);
+            }},
+            {bricks:[], init:function() {
+                steeringWheel.removeNode(true);
+                darkness0.style.display = darkness1.style.display = "none";
+                objects.brick.clearStones(objects.brick.levels[6].bricks);
+                
+                bonusInfo.style.display = "";
+                bonusInfo.style.visibility = "hidden";
+                bonusInfo.filters[1].apply();
+                bonusInfo.style.visibility = "visible";
+                bonusInfo.filters[1].play();
+                
+                objects.bonus.infoBoxVisible = true;
+            }, infoBoxVisible:false, nBricksDestroyed:0, initBonus:function() {
+                bonusInfo.filters[2].apply();
+                bonusInfo.style.visibility = "hidden";
+                bonusInfo.filters[2].play();
+                
+                setTimeout(function() {
+                    bonusInfo.removeNode(true);
+                    objects.bonus.infoBoxVisible = false;
+                    
+                    timerCell = g("infobar").rows[0].insertCell(3);
+                    timerCell.innerText = "Time: ";
+                    
+                    timer = document.createElement("span");
+                    timer.style.color = "red";
+                    timer.innerText = "3:00";
+                    timerCell.appendChild(timer);
+                    
+                    objects.bonus.timerInterval = setInterval(objects.bonus.tick, 1000);
+                    
+                    objects.bonus.insertRandom(true);
+                    objects.bonus.insertRandom(true);
+                    objects.bonus.insertRandom(true);
+                    objects.bonus.insertRandom(true);
+                    objects.bonus.insertRandom(true);
+                    
+                    while (objects.brick.nBricksLeft != 10)
+                        objects.bonus.insertRandom();
+                }, 3100);
+            }, timerInterval:NULL, time:180, tick:function() {
+                var t = --objects.bonus.time;
+                if (!t)
+                {
+                    clearInterval(objects.bonus.timerInterval);
+                    objects.bonus.timerInterval = NULL;
+                    timerCell.removeNode(true);
+                    
+                    if (objects.bonus.nBricksDestroyed >= 25)
+                        objects.bonus.giveNewHeart();
+                    
+                    objects.brick.levels[objects.player.level++].init();
+                    objects.player.displayInfo();
+                    return objects.shot.stopMoving();
+                }
+                
+                var s = t % 60;
+                var m = (t - s) / 60;
+                timer.innerText = m + ":" + ((s < 10) ? "0" + s : s);
+                
+                objects.bonus.nBricksDestroyed += 10 - objects.brick.nBricksLeft;
+                while (objects.brick.nBricksLeft != 10)
+                    objects.bonus.insertRandom();
+            }, insertRandom:function(stone) {
+                var bsLayer = g("brickshooter_layer");
+                var brickElem = document.createElement("v:rect");
+                brickElem.shotCollision = 2;
+                brickElem.className = "brick";
+                brickElem.extraData = {};
+                if (stone)
+                    brickElem.extraData.type = brick_stone;
+                else
+                {
+                    brickElem.extraData.type = Math.round(Math.random() * 3);
+                    if (brickElem.extraData.type == 3)
+                        brickElem.extraData.type = 4;
+                    objects.brick.nBricksLeft++;
+                }
+                
+                switch (brickElem.extraData.type)
+                {
+                case brick_green :
+                    brickElem.fillcolor = "#00ff99";
+                    break;
+                case brick_stone :
+                    brickElem.fillcolor = "#808080";
+                    break;
+                case brick_strong :
+                    brickElem.fillcolor = "#a489f3";
+                    brickElem.extraData.isCracked = null;
+                    break;
+                case brick_bouncy :
+                    brickElem.fillcolor = "#cc66ff";
+                    break;
+                default :
+                    brickElem.fillcolor = "#996600";
+                }
+                
+                brickElem.strokecolor = "#cc66ff";
+                brickElem.strokeweight = "1pt";
+                brickElem.style.width = mapCoordX(60);
+                brickElem.style.height = mapCoordY(20);
+                
+                do
+                {
+                    var x = Math.round(Math.random() * 960);
+                    var y = 40 + Math.round(Math.random() * 500);
+                    
+                    var l = mapCoordX(x);
+                    var r = mapCoordX(x + 60);
+                    var t = mapCoordY(y);
+                    var b = mapCoordY(y + 20);
+                    
+                    var e1 = document.elementFromPoint(l, t);
+                    var e2 = document.elementFromPoint(r, t);
+                    var e3 = document.elementFromPoint(l, b);
+                    var e4 = document.elementFromPoint(r, b);
+                } while ((e1.className == "brick") || (e2.className == "brick") || (e3.className == "brick") || (e4.className == "brick"))
+                
+                brickElem.style.left = l;
+                brickElem.style.top = brickElem.extraData.crackY = t;
+                brickElem.extraData.crackX = mapCoordX(x + 23);
+                
+                objects.bonus.bricks.push(brickElem);
+                return bsLayer.appendChild(brickElem);
+            }, giveNewHeart:function() {
+                objects.player.lives++;
+                
+                infoNewHeart.style.display = "";
+                g("nBricksDestroyed").innerText = objects.bonus.nBricksDestroyed;
+                infoNewHeart.style.visibility = "hidden";
+                infoNewHeart.filters[0].apply();
+                infoNewHeart.style.visibility = "visible";
+                infoNewHeart.filters[0].play();
+                
+                setTimeout(function() {
+                    infoNewHeart.filters[0].apply();
+                    infoNewHeart.style.visibility = "hidden";
+                    infoNewHeart.filters[0].play();
+                    setTimeout("infoNewHeart.removeNode(true);", 2100);
+                }, 5000);
+            }, clearBricks:function() {
+                for (var i = 0;i < objects.bonus.bricks.length;i++)
+                {
+                    if (objects.bonus.bricks[i].extraData.isCracked)
+                        objects.bonus.bricks[i].extraData.isCracked.removeNode();
+                    objects.bonus.bricks[i].removeNode();
+                }
+            }, skip:function() {
+                bonusInfo.filters[2].apply();
+                bonusInfo.style.visibility = "hidden";
+                bonusInfo.filters[2].play();
+                
+                setTimeout(function() {
+                    bonusInfo.removeNode(true);
+                    objects.bonus.infoBoxVisible = false;
+                    
+                    objects.brick.levels[objects.player.level++].init();
+                    objects.player.displayInfo();
+                    objects.shot.stopMoving();
+                }, 3100);
+            }},
+            {bricks:[[160, 130, 3], [200, 130, 2], [240, 130, 2], [280, 130, 2], [320, 130, 2], [360, 130, 2], [400, 130, 2], [440, 130, 2], [480, 130, 3], [160, 150], [200, 150, 3], [240, 150, 2], [280, 150, 2], [320, 150, 2], [360, 150, 2], [400, 150, 2], [440, 150, 3], [480, 150, 1], [160, 170], [200, 170], [240, 170, 3], [280, 170, 2], [320, 170, 2], [360, 170, 2], [400, 170, 3], [440, 170, 1], [480, 170, 1], [160, 190], [200, 190], [240, 190], [280, 190, 3], [320, 190, 2], [360, 190, 3], [400, 190, 1], [440, 190, 1], [480, 190, 1], [160, 210], [200, 210], [240, 210], [280, 210], [320, 210, 3], [360, 210, 1], [400, 210, 1], [440, 210, 1], [480, 210, 1], [160, 230], [200, 230], [240, 230], [285, 230, 3], [355, 230, 3], [400, 230, 1], [440, 230, 1], [480, 230, 1], [160, 250], [200, 250], [240, 250], [280, 250], [320, 250, 5], [360, 250, 1], [400, 250, 1], [440, 250, 1], [480, 250, 1], [160, 270], [200, 270], [240, 270], [285, 270, 5], [355, 270, 5], [400, 270, 1], [440, 270, 1], [480, 270, 1], [160, 290], [200, 290], [240, 290], [280, 290], [320, 290, 5], [360, 290, 1], [400, 290, 1], [440, 290, 1], [480, 290, 1], [160, 310], [200, 310], [240, 310], [285, 310, 3], [355, 310, 3], [400, 310, 1], [440, 310, 1], [480, 310, 1], [160, 330], [200, 330], [240, 330], [280, 330], [320, 330, 3], [360, 330, 1], [400, 330, 1], [440, 330, 1], [480, 330, 1], [160, 350], [200, 350], [240, 350], [280, 350, 3], [320, 350, 4], [360, 350, 3], [400, 350, 1], [440, 350, 1], [480, 350, 1], [160, 370], [200, 370], [240, 370, 3], [280, 370, 4], [320, 370, 4], [360, 370, 4], [400, 370, 3], [440, 370, 1], [480, 370, 1], [160, 390], [200, 390, 3], [240, 390, 4], [280, 390, 4], [320, 390, 4], [360, 390, 4], [400, 390, 4], [440, 390, 3], [480, 390, 1], [160, 410, 3], [200, 410, 4], [240, 410, 4], [280, 410, 4], [320, 410, 4], [360, 410, 4], [400, 410, 4], [440, 410, 4], [480, 410, 3], [0, 270, 1], [40, 250, 1], [40, 270, 1], [40, 290, 1], [80, 230, 1], [80, 250, 1], [80, 270, 1], [80, 290, 1], [80, 310, 1], [120, 210, 1], [120, 230, 1], [120, 250, 1], [120, 270, 1], [120, 290, 1], [120, 310, 1], [120, 330, 1], [240, 110, 4], [280, 110, 4], [320, 110, 4], [360, 110, 4], [400, 110, 4], [260, 90, 4], [300, 90, 4], [340, 90, 4], [380, 90, 4], [280, 70, 4], [320, 70, 4], [360, 70, 4], [300, 50, 4], [340, 50, 4], [320, 30, 4], [520, 210], [520, 230], [520, 250], [520, 270], [520, 290], [520, 310], [520, 330], [560, 230], [560, 250], [560, 270], [560, 290], [560, 310], [600, 250], [600, 270], [600, 290], [640, 270], [240, 430, 2], [280, 430, 2], [320, 430, 2], [360, 430, 2], [400, 430, 2], [260, 450, 2], [300, 450, 2], [340, 450, 2], [380, 450, 2], [280, 470, 2], [320, 470, 2], [360, 470, 2], [300, 490, 2], [340, 490, 2], [320, 510, 2],
+                     [730, 120, 1], [740, 100, 1], [750, 80, 1], [760, 60, 1], [780, 40, 1], [820, 30, 1], [860, 40, 1], [880, 60, 1], [890, 80, 1], [900, 100, 1], [910, 120, 1], [910, 140, 1], [900, 160, 1], [890, 180, 1], [880, 200, 1], [730, 140, 1], [740, 160, 1], [750, 180, 1], [760, 200, 1], [810, 160, 2, 60], [790, 100, 2, 30], [860, 100, 2, 30], [740, 220, 3], [780, 220, 4], [820, 220, 4], [860, 220, 4], [900, 220, 3], [740, 240, 4], [780, 240, 4], [820, 240, 4], [860, 240, 4], [900, 240, 4], [740, 260, 4], [780, 260, 4], [820, 260, 4], [860, 260, 4], [900, 260, 4], [740, 280, 4], [780, 280, 4], [820, 280, 4], [860, 280, 4], [900, 280, 4], [740, 300, 4], [780, 300, 4], [820, 300, 4], [860, 300, 4], [900, 300, 4], [740, 320, 4], [780, 320, 4], [820, 320, 4], [860, 320, 4], [900, 320, 4], [740, 340, 4], [780, 340, 4], [820, 340, 4], [860, 340, 4], [900, 340, 4], [740, 360, 4], [780, 360, 4], [820, 360, 4], [860, 360, 4], [900, 360, 4], [740, 380, 4], [780, 380, 4], [820, 380, 4], [860, 380, 4], [900, 380, 4], [740, 400, 3], [780, 400, 4], [820, 400, 4], [860, 400, 4], [900, 400, 3], [740, 420], [740, 440], [740, 460], [740, 480], [740, 500], [740, 520], [740, 540], [700, 540], [660, 540, 3], [740, 560, 3], [700, 560, 3], [660, 560, 3], [900, 420], [900, 440], [900, 460], [900, 480], [900, 500], [900, 520], [900, 540], [940, 540], [980, 540, 3], [900, 560, 3], [940, 560, 3], [980, 560, 3], [690, 220, 1, 50], [690, 240, 1], [690, 260, 1], [690, 280, 1], [690, 300, 1], [690, 320, 1], [690, 340, 1], [690, 360, 1], [690, 380, 1], [940, 220, 1, 50], [950, 240, 1], [950, 260, 1], [950, 280, 1], [950, 300, 1], [950, 320, 1], [950, 340, 1], [950, 360, 1], [950, 380, 1]],
+            init:function() {
+                objects.bonus.clearBricks();
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[8].bricks;
+                objects.brick.nBricksLeft = 0;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(ba[i][3] ? ba[i][3] : 40);
+                    brickElem.style.height = mapCoordY(20);
+                    
+                    switch (ba[i][2])
+                    {
+                    case brick_green :
+                        brickElem.fillcolor = "#00ff99";
+                        break;
+                    case brick_stone :
+                        brickElem.fillcolor = "#808080";
+                        break;
+                    case brick_strong :
+                        brickElem.fillcolor = "#a489f3";
+                        break;
+                    case brick_bouncy :
+                        brickElem.fillcolor = "#cc66ff";
+                        break;
+                    case brick_risky :
+                        brickElem.fillcolor = "#eb2c2c";
+                        break;
+                    default :
+                        brickElem.fillcolor = "#996600";
+                    }
+                    
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown, crackX:mapCoordX(ba[i][0] + (ba[i][3] ? ba[i][3] : 40) / 2 - 7), crackY:mapCoordY(ba[i][1])};
+                    if ((ba[i][2] != brick_stone) && (ba[i][2] != brick_risky))
+                        objects.brick.nBricksLeft++;
+                    if (ba[i][2] == brick_strong)
+                        brickElem.extraData.isCracked = null;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                objects.prize.create(prize_ultrasize, 830, 160, ba[213]);
+                objects.prize.create(prize_brickChanger, 570, 270, ba[172]);
+                objects.prize.create(prize_brickChanger, 330, 70, ba[158]);
+                objects.prize.create(prize_brickChanger, 90, 270, ba[138]);
+                objects.prize.create(prize_brickChanger, 330, 470, ba[189]);
+            }},
+            {bricks:[[492, 260, 3], [492, 300, 3], [492, 320, 4], [492, 340, 4], [492, 360, 2], [492, 380, 2], [492, 400, 4], [492, 420, 4], [492, 440, 2], [492, 460, 2], [492, 480, 4], [492, 500, 4], [492, 520, 3], 
+                     [450, 540, 3], [410, 560, 3], [370, 580, 3], [410, 580, 4], [450, 580, 4], [490, 580, 2], [530, 580, 4], [570, 580, 4], [610, 580, 3], [570, 560, 3], [530, 540, 3], 
+                     
+                     [452, 280, 3], [400, 280, 3], [350, 280, 3], [300, 280, 3], [250, 280, 3], [200, 280, 3], [150, 280, 3], [100, 280, 3], 
+                     [400, 250], [350, 220, 1], [300, 190, 2], [250, 160, 4], [200, 130, 3], [150, 100], [100, 70, 1], 
+                     [400, 310], [350, 340, 1], [300, 370, 2], [250, 400, 4], [200, 430, 3], [150, 460], [100, 490, 1],
+                     [350, 255], [300, 230, 1], [250, 205, 2], [200, 180, 3], [150, 155], [100, 130, 1], 
+                     [350, 305], [300, 330, 1], [250, 355, 2], [200, 380, 3], [150, 405], [100, 430, 1],
+                     [300, 255], [250, 230, 1], [200, 205, 3], [150, 190], [100, 165, 1], 
+                     [300, 305], [250, 330, 1], [200, 355, 3], [150, 370], [100, 395, 1],
+                     [250, 260], [200, 240, 3], [150, 220], [100, 200, 5], [150, 250, 4], [100, 240, 4], 
+                     [250, 300], [200, 320, 3], [150, 340], [100, 360, 5], [150, 310, 4], [100, 320, 4], 
+                     
+                     [532, 280, 3], [584, 280, 3], [634, 280, 3], [684, 280, 3], [734, 280, 3], [784, 280, 3], [834, 280, 3], [884, 280, 3], 
+                     [584, 250], [634, 220, 1], [684, 190, 2], [734, 160, 4], [784, 130, 3], [834, 100], [884, 70, 1], 
+                     [584, 310], [634, 340, 1], [684, 370, 2], [734, 400, 4], [784, 430, 3], [834, 460], [884, 490, 1], 
+                     [634, 255], [684, 230, 1], [734, 205, 2], [784, 180, 3], [834, 155], [884, 130, 1], 
+                     [634, 305], [684, 330, 1], [734, 355, 2], [784, 380, 3], [834, 405], [884, 430, 1], 
+                     [684, 255], [734, 230, 1], [784, 205, 3], [834, 190], [884, 165, 1], 
+                     [684, 305], [734, 330, 1], [784, 355, 3], [834, 370], [884, 395, 1], 
+                     [734, 260], [784, 240, 3], [834, 220], [884, 200, 5], [834, 250, 4], [884, 240, 4], 
+                     [734, 300], [784, 320, 3], [834, 340], [884, 360, 5], [834, 310, 4], [884, 320, 4]],
+            init:function() {
+                objects.brick.clearStones(objects.brick.levels[8].bricks);
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[9].bricks;
+                objects.brick.nBricksLeft = 0;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(40);
+                    brickElem.style.height = mapCoordY(20);
+                    
+                    switch (ba[i][2])
+                    {
+                    case brick_green :
+                        brickElem.fillcolor = "#00ff99";
+                        break;
+                    case brick_stone :
+                        brickElem.fillcolor = "#808080";
+                        break;
+                    case brick_strong :
+                        brickElem.fillcolor = "#a489f3";
+                        break;
+                    case brick_bouncy :
+                        brickElem.fillcolor = "#cc66ff";
+                        break;
+                    case brick_risky :
+                        brickElem.fillcolor = "#eb2c2c";
+                        break;
+                    default :
+                        brickElem.fillcolor = "#996600";
+                    }
+                    
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown, crackX:mapCoordX(ba[i][0] + 13), crackY:mapCoordY(ba[i][1])};
+                    if ((ba[i][2] != brick_stone) && (ba[i][2] != brick_risky))
+                        objects.brick.nBricksLeft++;
+                    if (ba[i][2] == brick_strong)
+                        brickElem.extraData.isCracked = null;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                objects.darkness.display(darkness2);
+                
+                objects.prize.create(prize_cover, 502, 380, ba[5]);
+                objects.prize.create(prize_heart, 310, 230, ba[47]);
+                objects.prize.create(prize_superPower, 694, 230, ba[103]);
+            }},
+            {bricks:[], sticksOffset:212,
+            init:function() {
+                objects.brick.clearStones(objects.brick.levels[9].bricks);
+                darkness2.style.display = "none";
+                objects.cover.destroy(true);
+                
+                var bsLayer = g("brickshooter_layer");
+                var ba = objects.brick.levels[10].bricks;
+                
+                for (var i = 2;i <= 962;i += 60)
+                    ba.push([i, 50, 3]);
+                
+                var t = new Array(5), i = 0;
+                for (var y = 0;y < 5;y++)
+                {
+                    t[y] = new Array(17);
+                    for (var x = 0;x < 17;x++)
+                    {
+                        if ((!x) || (x == 16))
+                            t[y][x] = 3;
+                        else
+                        {
+                            t[y][x] = i;
+                            if (i++ == 4)
+                                i = 0;
+                            if (i == 3)
+                                i++;
+                        }
+                    }
+                }
+                
+                objects.brick.levels[10].zigzag(true, 17, 5, t);
+                objects.brick.levels[10].zigzag(false, 17, 5, t);
+                
+                for (var i = 0;i < 2;i++)
+                {
+                    for (var y = 0;y < 5;y++)
+                    {
+                        for (var x = 0;x < 17;x++)
+                            ba.push([2 + x * 60, 70 + i * 100 + y * 20, t[y][x]]);
+                    }
+                }
+                
+                ba[38][2] = ba[46][2] = ba[54][2] = ba[56][2] = ba[62][2] = ba[64][2] = ba[72][2] = ba[80][2] = 5;
+                
+                for (var i = 0;i < 4;i++)
+                {
+                    ba.push([2, 270 + i * 20, 3]);
+                    ba.push([962, 270 + i * 20, 3]);
+                }
+                
+                for (var i = 2;i <= 962;i += 60)
+                    ba.push([i, 350, 3]);
+                
+                var stickLocations = [0, 5, 11, 16];
+                for (var i = 0;i < stickLocations.length;i++)
+                {
+                    for (var j = 0;j < 6;j++)
+                        ba.push([2 + stickLocations[i] * 60, 370 + j * 20, 3]);
+                }
+                
+                objects.brick.nBricksLeft = 0;
+                for (var i = 0;i < ba.length;i++)
+                {
+                    var brickElem = document.createElement("v:rect");
+                    brickElem.shotCollision = 2;
+                    brickElem.className = "brick";
+                    brickElem.style.left = mapCoordX(ba[i][0]);
+                    brickElem.style.top = mapCoordY(ba[i][1]);
+                    brickElem.style.width = mapCoordX(60);
+                    brickElem.style.height = mapCoordY(20);
+                    
+                    switch (ba[i][2])
+                    {
+                    case brick_green :
+                        brickElem.fillcolor = "#00ff99";
+                        break;
+                    case brick_stone :
+                        brickElem.fillcolor = "#808080";
+                        break;
+                    case brick_strong :
+                        brickElem.fillcolor = "#a489f3";
+                        break;
+                    case brick_bouncy :
+                        brickElem.fillcolor = "#cc66ff";
+                        break;
+                    case brick_risky :
+                        brickElem.fillcolor = "#eb2c2c";
+                        break;
+                    default :
+                        brickElem.fillcolor = "#996600";
+                    }
+                    
+                    brickElem.strokecolor = "#cc66ff";
+                    brickElem.strokeweight = "1pt";
+                    brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown, crackX:mapCoordX(ba[i][0] + 23), crackY:mapCoordY(ba[i][1])};
+                    if ((ba[i][2] != brick_stone) && (ba[i][2] != brick_risky))
+                        objects.brick.nBricksLeft++;
+                    if (ba[i][2] == brick_strong)
+                        brickElem.extraData.isCracked = null;
+                    ba[i] = bsLayer.appendChild(brickElem);
+                }
+                
+                mouth.style.display = "";
+                objects.boundary.display();
+                
+                objects.bomb.gInterval = setInterval(objects.bomb.generate, objects.bomb.gms);
+                for (var i = 0;i < objects.bomb.groups.length;i++)
+                    objects.bomb.groups[i].style.display = "";
+                
+                objects.prize.create(prize_brickRemover, 262, 110, ba[55]);
+                objects.prize.create(prize_brickRemover, 742, 110, ba[63]);
+                objects.prize.create(prize_ultrasize, 502, 110, ba[59]);
+                objects.prize.create(prize_heart, 502, 210, ba[144]);
+            }, zigzag:function(d, w, h, t) {
+                var x = 0, y = d ? 0 : h - 1;
+                do
+                {
+                    t[y][x] = 3;
+                    x++;
+                    
+                    if (d)
+                    {
+                        if (++y == h - 1)
+                            d = false;
+                    }
+                    else
+                    {
+                        if (--y == 0)
+                            d = true;
+                    }
+                } while (x < w)
+            }}
+            ],
+            crack:function(brick) {
+                var bsLayer = g("brickshooter_layer");
+                var crackShape = document.createElement("v:shape");
+                crackShape.type = "#crack";
+                crackShape.style.position = "absolute";
+                crackShape.style.left = brick.extraData.crackX;
+                crackShape.style.top = brick.extraData.crackY;
+                crackShape.style.zIndex = 1;
+                crackShape.style.width = mapCoordX(15);
+                crackShape.style.height = mapCoordY(20);
+                brick.extraData.isCracked = bsLayer.appendChild(crackShape);
+            },
+            clearStones:function(ba) {
+                if (ba[0] instanceof Array)
+                    return;
+                
+                for (var i = 0;i < ba.length;i++)
+                    if (ba[i].extraData.type == brick_stone)
+                        ba[i].removeNode();
+            }
+        },
+        prize:{types:[], initTypes:function() {
+            objects.prize.types[prize_heart] = g("pt_heart").removeNode(true);
+            objects.prize.types[prize_ultrasize] = g("pt_ultrasize").removeNode(true);
+            objects.prize.types[prize_superPower] = g("pt_superPower").removeNode(true);
+            objects.prize.types[prize_mouseControl] = g("pt_mouseControl").removeNode(true);
+            objects.prize.types[prize_brickRemover] = g("pt_brickRemover").removeNode(true);
+            objects.prize.types[prize_brickChanger] = g("pt_brickChanger").removeNode(true);
+            objects.prize.types[prize_cover] = g("pt_cover").removeNode(true);
+        }, create:function(t, x, y, b) {
+            var prize = objects.prize.types[t].cloneNode(true);
+            var prizeID = objects.prize.baseID++;
+            prize.id = "prize_" + prizeID;
+            prize.style.width = mapCoordX(20);
+            prize.style.height = mapCoordY(20);
+            prize.style.left = mapCoordX(x);
+            prize.style.top = mapCoordY(y);
+            prize.extraData = {type:t, x:x, y:y, id:prizeID, interval:NULL, brick:b};
+            if (b)
+                b.extraData.prize = prize;
+            objects.prize.instances.push(prize);
+            return g("brickshooter_layer").appendChild(prize);
+        }, baseID:1, px:4, ms:12, nudge:function(prizeID) {
+            var prize = g("prize_" + prizeID);
+            var y = prize.extraData.y + objects.prize.px;
+            if (y > 768)
+                objects.prize.destroy(prize);
+            else
+            {
+                var l = mapCoordX(prize.extraData.x), r = mapCoordX(prize.extraData.x + 20), t = mapCoordY(y), b = mapCoordY(y + 20);
+                var elem1 = document.elementFromPoint(l, b), elem2 = document.elementFromPoint(r, b);
+                if ((elem1.id == "player_object") || (elem2.id == "player_object"))
+                {
+                    objects.prize.handle(prize.extraData);
+                    objects.prize.destroy(prize);
+                }
+                else
+                {
+                    prize.extraData.y = y;
+                    prize.style.top = t;
+                }
+            }
+        }, destroy:function(prize) {
+            prize.removeNode(true);
+            clearInterval(prize.extraData.interval);
+            prize.extraData.interval = NULL;
+        }, instances:[], renewInstances:function() {
+            var newInstances = [], oldInstances = objects.prize.instances;
+            for (var i = 0;i < oldInstances.length;i++)
+                if (oldInstances[i].extraData.interval)
+                    newInstances.push(oldInstances[i]);
+            objects.prize.instances = newInstances;
+        }, pause:function() {
+            var arr = objects.prize.instances;
+            for (var i = 0;i < arr.length;i++)
+                if (arr[i].extraData.interval)
+                    clearInterval(arr[i].extraData.interval);
+        }, resume:function() {
+            var arr = objects.prize.instances;
+            for (var i = 0;i < arr.length;i++)
+                if (arr[i].extraData.interval)
+                    arr[i].extraData.interval = setInterval("objects.prize.nudge(" + (arr[i].extraData.id) + ")", objects.prize.ms);
+        }, handle:function(p) {
+            switch (p.type)
+            {
+            case prize_heart :
+                objects.player.score += 4000;
+                objects.player.lives++;
+                objects.player.displayInfo();
+                break;
+            case prize_ultrasize :
+                g("score").innerText = objects.player.score += 2000;
+                player.style.width = mapCoordX(objects.player.w += 40);
+                if ((objects.player.x + objects.player.w) > 1024)
+                    player.style.left = mapCoordX(objects.player.x = 1024 - objects.player.w);
+                objects.player.ultrasizeLevel++;
+                break;
+            case prize_superPower :
+                g("score").innerText = objects.player.score += 1000;
+                shot.fillcolor = "#f05078";
+                objects.shot.hasSuperPower = 25;
+                break;
+            case prize_mouseControl :
+                g("score").innerText = objects.player.score += 5000;
+                document.onmousemove = objects.player.moveByMouse;
+                player.fillcolor = "#00ff99";
+                objects.player.mouseControlMode = true;
+                break;
+            case prize_brickRemover :
+                g("score").innerText = objects.player.score += 3000;
+                var arr = objects.brick.levels[objects.player.level - 1].bricks;
+                for (var i = 0;i < 20;i++)
+                {
+                    var r = Math.round(Math.random() * (objects.brick.nBricksLeft - 1));
+                    var k = 0;
+                    for (var j = 0;j < arr.length;j++)
+                    {
+                        if ((arr[j].extraData.type == brick_stone) || (!arr[j].parentElement))
+                            continue;
+                        
+                        if (k++ == r)
+                        {
+                            if (arr[j].extraData.isCracked)
+                                arr[j].extraData.isCracked.removeNode();
+                            if (arr[j].extraData.prize)
+                                arr[j].extraData.prize.removeNode(true);
+                            arr[j].removeNode();
+                            if ((arr[j].extraData.type != brick_risky) && (--objects.brick.nBricksLeft == 0))
+                            {
+                                var nextLevel = objects.brick.levels[objects.player.level++];
+                                if (nextLevel)
+                                {
+                                    objects.prize.renewInstances();
+                                    nextLevel.init();
+                                    objects.player.displayInfo();
+                                    objects.shot.stopMoving();
+                                }
+                                else
+                                    winAllLevels();
+                                
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                }
+                break;
+            case prize_brickChanger :
+                g("score").innerText = objects.player.score += 1500;
+                var brickType = p.brick.extraData.type;
+                var ba = objects.brick.levels[objects.player.level - 1].bricks;
+                var arr = [];
+                for (var i = 0;i < ba.length;i++)
+                    if ((ba[i].parentElement != null) && (ba[i].extraData.type != brick_stone) && (ba[i].extraData.type != brick_risky) && (ba[i].extraData.type != brickType))
+                        arr.push(ba[i]);
+                
+                var n = (arr.length % 2) ? (arr.length - 1) / 2 : arr.length / 2;
+                for (var i = 0;i < n;i++)
+                {
+                    var r = Math.round(Math.random() * (arr.length - 1));
+                    
+                    if (arr[r].extraData.isCracked)
+                    {
+                        arr[r].extraData.isCracked.removeNode();
+                        arr[r].extraData.isCracked = null;
+                    }
+                    
+                    switch (arr[r].extraData.type = brickType)
+                    {
+                    case brick_brown :
+                        arr[r].fillcolor = "#996600";
+                        break;
+                    case brick_green :
+                        arr[r].fillcolor = "#00ff99";
+                        break;
+                    case brick_strong :
+                        arr[r].fillcolor = "#a489f3";
+                        arr[r].extraData.isCracked = null;
+                        break;
+                    case brick_bouncy :
+                        arr[r].fillcolor = "#cc66ff";
+                        break;
+                    }
+                    
+                    arr.splice(r, 1);
+                }
+                
+                n = objects.prize.instances.length;
+                for (var i = 0;i < n;i++)
+                {
+                    if (objects.prize.instances[i].extraData.type == prize_brickChanger)
+                    {
+                        objects.prize.instances[i].extraData.brick.extraData.prize = null;
+                        objects.prize.destroy(objects.prize.instances[i]);
+                    }
+                }
+                
+                break;
+            case prize_cover :
+                g("score").innerText = objects.player.score += 4000;
+                objects.cover.init();
+                break;
+            }
+        }},
+        flower:{angle:0, isRotatingCW:false, interval:NULL, nudge:function() {
+            if (objects.flower.isRotatingCW)
+            {
+                fr.style.rotation = -(fl.style.rotation = objects.flower.angle += objects.flower.deg);
+                if (objects.flower.angle == 30)
+                    objects.flower.isRotatingCW = false;
+            }
+            else
+            {
+                fr.style.rotation = -(fl.style.rotation = objects.flower.angle -= objects.flower.deg);
+                if (objects.flower.angle == -30)
+                    objects.flower.isRotatingCW = true;
+            }
+        }, deg:2, ms:25},
+        darkness:{display:function() {
+            for (var i = 0;i < arguments.length;i++)
+            {
+                arguments[i].style.display = "";
+                arguments[i].style.visibility = "hidden";
+                arguments[i].filters[0].apply();
+                arguments[i].style.visibility = "visible";
+                arguments[i].filters[0].play();
+            }
+        }},
+        cube:{x:496, y:628, w:32, h:32, px:4, ms:15, blocked:false, currentDirection:NULL, upInterval:NULL, downInterval:NULL, startMoving:function() {
+            if (event.repeat || objects.tube.containsCube || (objects.cube.currentDirection == vague))
+                return;
+            
+            switch (event.keyCode)
+            {
+            case up :
+                if (objects.cube.currentDirection)
+                    return objects.cube.enableVagueCondition();
+                objects.cube.currentDirection = up;
+                if (!objects.cube.blocked)
+                    objects.cube.upInterval = setInterval(objects.cube.nudgeUp, objects.cube.ms);
+                break;
+            case down :
+                if (objects.cube.currentDirection)
+                    return objects.cube.enableVagueCondition();
+                objects.cube.currentDirection = down;
+                if (!objects.cube.blocked)
+                    objects.cube.downInterval = setInterval(objects.cube.nudgeDown, objects.cube.ms);
+                break;
+            }
+        }, stopMoving:function() {
+            if (objects.tube.containsCube)
+                return;
+            
+            switch (event.keyCode)
+            {
+            case up :
+                if (objects.cube.currentDirection == vague)
+                    objects.cube.disableVagueCondition(down);
+                else
+                {
+                    clearInterval(objects.cube.upInterval);
+                    objects.cube.currentDirection = NULL;
+                }
+                break;
+            case down :
+                if (objects.cube.currentDirection == vague)
+                    objects.cube.disableVagueCondition(up);
+                else
+                {
+                    clearInterval(objects.cube.downInterval);
+                    objects.cube.currentDirection = NULL;
+                }
+                break;
+            }
+        }, enableVagueCondition:function() {
+            if (objects.cube.currentDirection == up)
+                clearInterval(objects.cube.upInterval);
+            else
+                clearInterval(objects.cube.downInterval);
+            objects.cube.currentDirection = vague;
+            if (!objects.cube.blocked)
+                cube.strokecolor = "red";
+        }, disableVagueCondition:function(direction) {
+            objects.cube.currentDirection = direction;
+            if (!objects.cube.blocked)
+            {
+                cube.strokecolor = "#ff80ff";
+                if (direction == up)
+                    objects.cube.upInterval = setInterval(objects.cube.nudgeUp, objects.cube.ms);
+                else
+                    objects.cube.downInterval = setInterval(objects.cube.nudgeDown, objects.cube.ms);
+            }
+        }},
+        tube:{containsCube:false},
+        cover:{x:412, y:230, w:200, h:150, on:false, init:function() {
+            if (objects.cover.on)
+                return;
+            
+            var bsLayer = g("brickshooter_layer");
+            cover = document.createElement("v:rect");
+            cover.id = "cover_object";
+            cover.strokecolor = "#ff80ff";
+            cover.strokeweight = "1.5pt";
+            cover.shotCollision = 3;
+            cover.style.filter = "progid:DXImageTransform.Microsoft.BasicImage(opacity=0.5) progid:DXImageTransform.Microsoft.Spiral(gridSizeX=8, gridSizeY=8)";
+            cover.style.cursor = "move";
+            cover.style.left = mapCoordX(objects.cover.x);
+            cover.style.top = mapCoordY(objects.cover.y);
+            cover.style.width = mapCoordX(objects.cover.w);
+            cover.style.height = mapCoordY(objects.cover.h);
+            cover.onmousedown = objects.cover.startMoving;
+            document.onmousemove = objects.cover.move;
+            cover.onmouseup = objects.cover.stopMoving;
+            cover.ondblclick = objects.cover.destroy;
+            
+            var tb = document.createElement("v:textbox");
+            tb.innerText = "Special cover!";
+            
+            cover.appendChild(tb);
+            bsLayer.appendChild(cover);
+            
+            cover.style.visibility = "hidden";
+            cover.filters[1].apply();
+            cover.style.visibility = "visible";
+            cover.filters[1].play(1.5);
+            
+            objects.cover.on = true;
+        }, isMoving:false, startMoving:function() {
+            if ((!objects.shot.isOnCover) && (!cover.filters[1].status))
+                objects.cover.isMoving = true;
+        }, stopMoving:function() {
+            objects.cover.isMoving = false;
+        }, move:function() {
+            if (objects.cover.isMoving)
+            {
+                var x = Math.floor(event.x / realScreenW * myScreenW) - objects.cover.w / 2;
+                if (x < 0)
+                    x = 0;
+                if ((x + objects.cover.w) > myScreenW)
+                    x = myScreenW - objects.cover.w;
+                
+                var y = Math.floor(event.y / realScreenH * myScreenH) - objects.cover.h / 2;
+                if (y < 30)
+                    y = 30;
+                if ((y + objects.cover.h) > 700)
+                    y = 700 - objects.cover.h;
+                
+                cover.style.left = mapCoordX(objects.cover.x = x);
+                cover.style.top = mapCoordY(objects.cover.y = y);
+            }
+        }, destroy:function(force) {
+            if (!objects.cover.on)
+                return;
+            
+            if (!force)
+            {
+                if (objects.shot.isOnCover || cover.filters[1].status)
+                    return;
+            }
+            
+            cover.removeNode(true);
+            document.onmousemove = null;
+            
+            objects.cover.on = objects.cover.isMoving = false;
+        }},
+        mouth:{x:66, y:274, w:892, h:72, bloodPercentage:100, setBlood:function(percent) {
+            if (percent <= 0)
+            {
+                if (blood.parentElement)
+                {
+                    blood.removeNode();
+                    objects.mouth.bloodPercentage = 0;
+                    
+                    var t = true;
+                    var ba = objects.brick.levels[10].bricks;
+                    var offset = objects.brick.levels[10].sticksOffset;
+                    for (var i = 0;i < offset;i++)
+                    {
+                        if (ba[i].extraData.type == brick_stone)
+                        {
+                            if (t)
+                            {
+                                ba[i].fillcolor = "#a489f3";
+                                ba[i].extraData.type = brick_strong;
+                                ba[i].extraData.isCracked = null;
+                            }
+                            else
+                            {
+                                ba[i].fillcolor = "#00ff99";
+                                ba[i].extraData.type = brick_green;
+                            }
+                            
+                            t = !t;
+                            objects.brick.nBricksLeft++;
+                        }
+                    }
+                    
+                    objects.boundary.destroy();
+                }
+            }
+			else
+            {
+                if (percent > 100)
+                    percent = 100;
+                
+                blood.style.width = percent + "%";
+                objects.mouth.bloodPercentage = percent;
+            }
+        }},
+        boundary:{x:462, y:725, w:100, h:30, lineX:512, on:false, display:function() {
+            boundary.style.display = "";
+            
+            var a = objects.player.x;
+            var b = objects.player.x + objects.player.w;
+            if ((a <= objects.boundary.lineX) && (objects.boundary.lineX <= b))
+            {
+                if (objects.player.currentDirection == right)
+                    player.style.left = mapCoordX(objects.player.x = objects.boundary.x + objects.boundary.w);
+                else
+                    player.style.left = mapCoordX(objects.player.x = objects.boundary.x - objects.player.w);
+                
+                if (objects.player.isHoldingShot)
+                    shot.style.left = mapCoordX(objects.shot.x = objects.player.x + objects.player.w / 2 - 10);
+            }
+            
+            objects.boundary.on = true;
+        }, destroy:function() {
+            boundary.removeNode();
+            objects.boundary.on = false;
+        }, illegalEntry:function() {
+            objects.mouth.setBlood(objects.mouth.bloodPercentage + 5);
+        }, jump:function() {
+            var pr = objects.player.x + objects.player.w;
+            var br = objects.boundary.x + objects.boundary.w;
+            if (((objects.boundary.x < pr) && (pr < objects.boundary.lineX)) || ((objects.boundary.lineX < objects.player.x) && (objects.player.x < br)))
+            {
+                var x = objects.boundary.lineX * 2 - pr;
+                player.style.left = mapCoordX(objects.player.x = x);
+                if (objects.player.isHoldingShot)
+                    shot.style.left = mapCoordX(objects.shot.x = x + objects.player.w / 2 - 10);
+            }
+        }}, 
+        bomb:{groups:[], initialY:380, px:4, ms:12, gInterval:NULL, gms:4000, nudge:function(groupID) {
+            var bg = g("bombGroup_" + groupID);
+            var y = bg.extraData.y + objects.bomb.px;
+            if (y > 768)
+                objects.bomb.destroy(bg);
+            else
+            {
+                var tipY = mapCoordY(y + bg.extraData.h);
+                for (var i = 0;i < bg.children.length;i++)
+                {
+                    var tipX = mapCoordX(bg.extraData.x + 15 + 60 * i);
+                    var elemAhead = document.elementFromPoint(tipX, tipY);
+                    if (elemAhead.id == "player_object")
+                    {
+                        objects.bomb.handle(bg.extraData.type);
+                        objects.bomb.destroy(bg);
+                        return;
+                    }
+                }
+                
+                bg.style.top = mapCoordY(bg.extraData.y = y);
+            }
+        }, destroy:function(bg) {
+            clearInterval(bg.extraData.dInterval);
+            bg.extraData.dInterval = NULL;
+            bg.style.display = "none";
+            bg.extraData.status = 2;
+        }, handle:function(bgt) {
+            switch (bgt)
+            {
+            case 0 :
+                objects.player.loseLife();
+                break;
+            case 1 :
+                if (objects.mouth.bloodPercentage)
+                    objects.mouth.setBlood(objects.mouth.bloodPercentage + 10);
+                else
+                {
+                    var bsLayer = g("brickshooter_layer");
+                    var ba = objects.brick.levels[10].bricks;
+                    var n = 0;
+                    for (var i = 0;i < ba.length;i++)
+                    {
+                        if ((!ba[i].parentElement) && ((ba[i].extraData.type == brick_brown) || (ba[i].extraData.type == brick_green)))
+                        {
+                            bsLayer.appendChild(ba[i]);
+                            objects.brick.nBricksLeft++;
+                            
+                            if (++n == 5)
+                                break;
+                        }
+                    }
+                }
+                
+                break;
+            }
+        }, pause:function() {
+            clearInterval(objects.bomb.gInterval);
+            
+            var arr = objects.bomb.groups;
+            for (var i = 0;i < arr.length;i++)
+                if (arr[i].extraData.dInterval)
+                    clearInterval(arr[i].extraData.dInterval);
+        }, resume:function() {
+            objects.bomb.gInterval = setInterval(objects.bomb.generate, objects.bomb.gms);
+            
+            var arr = objects.bomb.groups;
+            for (var i = 0;i < arr.length;i++)
+                if (arr[i].extraData.dInterval)
+                    arr[i].extraData.dInterval = setInterval("objects.bomb.nudge(" + (arr[i].extraData.id) + ")", objects.bomb.ms);
+        }, generate:function() {
+            if (Math.round(Math.random()))
+                return;
+            
+            var r = Math.round(Math.random() * (objects.bomb.groups.length - 1));
+            var bg = objects.bomb.groups[r];
+            if (bg.extraData.status != 2)
+                return;
+            
+            bg.extraData.type = Math.round(Math.random());
+            switch (bg.extraData.type)
+            {
+            case 0 :
+                for (var i = 0;i < bg.children.length;i++)
+                    bg.children[i].fillcolor = "#eb2c2c";
+                break;
+            case 1 :
+                for (var i = 0;i < bg.children.length;i++)
+                    bg.children[i].fillcolor = "#0080ff";
+                break;
+            }
+            
+            bg.style.top = mapCoordY(bg.extraData.y = objects.bomb.initialY);
+            bg.style.display = "";
+            bg.extraData.dInterval = setInterval("objects.bomb.nudge(" + (bg.extraData.id) + ")", objects.bomb.ms);
+            bg.extraData.status = 1;
+        }}
+    };
+    
+    objects.bonus = objects.brick.levels[7];
+
+    for (var i = 0;i < 11;i++)
+    {
+        var lev = objects.brick.levels[i];
+        lev.password = "";
+        for (var j = 0;j < 10;j++)
+            lev.password += passwords[i][j].toString(36);
+    }
+    
+    var helpPages = [
+        {index:0, element:null, init:function() {
+            var e = g("player_image");
+            e.style.width = mapCoordX(objects.player.w);
+            e.style.height = mapCoordY(objects.player.h);
+            
+            e = g("shot_image");
+            e.style.width = mapCoordX(objects.shot.w);
+            e.style.height = mapCoordY(objects.shot.h);
+            
+            smd = g("shot_movement_demo");
+            smd.style.width = mapCoordX(250);
+            smd.style.height = mapCoordY(200);
+            
+            helpPages[0].demoInterval = setInterval(function() {
+                function setAngle(bpx, bpy, a)
+                {
+                    p.shotA = a;
+                    p.shotBPX = bpx;
+                    p.shotBPY = bpy;
+                    p.shotD = 0;
+                }
+                
+                var p = helpPages[0];
+                var demoPlayer = smd.children[1];
+                var demoShot = smd.children[2];
+                with (Math)
+                {
+                    var radians = p.shotA * PI / 180;
+                    var x = floor(p.shotBPX + cos(radians) * (p.shotD += objects.shot.px));
+                    var y = floor(p.shotBPY - sin(radians) * p.shotD);
+                    if (x < 0)
+                        setAngle(x = 0, y, (p.shotA > 180) ? 540 - p.shotA : 180 - p.shotA);
+                    else if (x > 230)
+                        setAngle(x = 230, y, (p.shotA < 90) ? 180 - p.shotA : 540 - p.shotA);
+                    else if (y < 0)
+                        setAngle(x, y = 0, 360 - p.shotA);
+                    else if (y > 145)
+                    {
+                        setAngle(x, y = 145, 360 - p.shotA);
+                        
+                        var X = x - 40;
+                        if (X < 0)
+                            X = 0;
+                        else if (X > 150)
+                            X = 150;
+                        demoPlayer.style.left = X;
+                    }
+                    
+                    demoShot.style.left = p.shotX = x;
+                    demoShot.style.top = p.shotY = y;
+                }
+            }, objects.shot.ms);
+        }, cleanUp:function() {
+            clearInterval(helpPages[0].demoInterval);
+            helpPages[0].demoInterval = NULL;
+        }, demoInterval:NULL, shotX:115, shotY:145, shotA:30, shotBPX:115, shotBPY:145, shotD:0},
+        {index:1, element:null, init:function() {
+            var brickImages = g("tblBrickTypes").getElementsByTagName("rect");
+            for (var i = 0;i < brickImages.length;i++)
+            {
+                brickImages[i].style.width = mapCoordX(60);
+                brickImages[i].style.height = mapCoordY(20);
+            }
+        }, cleanUp:new Function},
+        {index:2, element:null, init:function() {
+            var prizeImages = g("tblPrizes").getElementsByTagName("group");
+            for (var i = 0;i < prizeImages.length;i++)
+            {
+                prizeImages[i].style.width = mapCoordX(20);
+                prizeImages[i].style.height = mapCoordY(20);
+            }
+        }, cleanUp:new Function},
+        {index:3, element:null, init:function() {
+            var bombImages = g("listOfBombTypes").getElementsByTagName("shape");
+            for (var i = 0;i < bombImages.length;i++)
+            {
+                bombImages[i].style.display = ""; //!!!
+                bombImages[i].style.position = "relative";
+                bombImages[i].style.width = mapCoordX(30);
+                bombImages[i].style.height = mapCoordY(40);
+                bombImages[i].style.top = mapCoordY(10);
+            }
+        }, cleanUp:function() {
+            var bombImages = g("listOfBombTypes").getElementsByTagName("shape");
+            for (var i = 0;i < bombImages.length;i++)
+                bombImages[i].style.display = "none"; //!!!
+        }}
+    ];
+    
+    var currentPage = null;
+    
+    function mapCoordX(x)
+    {
+        return Math.floor(x / myScreenW * realScreenW);
+    }
+
+    function mapCoordY(y)
+    {
+        return Math.floor(y / myScreenH * realScreenH);
+    }
+
+    function g(id)
+    {
+        return document.getElementById(id);
+    }
+                
+    function initMainMenu()
+    {
+        showLayer("mainMenu_layer");
+        
+        var menuItems = currentLayer.children;
+        for (var i = 0;i < menuItems.length;i++)
+        {
+            menuItems[i].style.width = mapCoordX(180);
+            menuItems[i].style.height = mapCoordY(40);
+            menuItems[i].style.position = "absolute";
+            menuItems[i].style.left = mapCoordX(422);
+            menuItems[i].onmouseover = menuItems[i].onmouseout = highlightItem;
+            
+            menuItems[i].style.visibility = "hidden";
+            menuItems[i].filters[0].apply();
+            menuItems[i].style.visibility = "visible";
+            menuItems[i].filters[0].play();
+        }
+        
+        menuItems[0].style.top = mapCoordY(260);
+        menuItems[1].style.top = mapCoordY(320);
+        menuItems[2].style.top = mapCoordY(380);
+        menuItems[3].style.top = mapCoordY(440);
+        menuItems[4].style.top = mapCoordY(500);
+        
+        document.onclick = function() {
+            var menuItems = g("mainMenu_layer").children;
+            for (var i = 0;i < menuItems.length;i++)
+                menuItems[i].filters[0].stop();
+        };
+        
+        objects.prize.initTypes();
+        initHelp();
+    }
+
+    function highlightItem()
+    {
+        if (this.filters[0].status)
+            return;
+        
+        if (event.type == "mouseover")
+            this.fillcolor = "#f89b56";
+        else
+            this.fillcolor = "#ceb4f1";
+    }
+
+    function initGame()
+    {
+        showLayer("brickshooter_layer");
+        
+        if ((!!event) && (event.shiftKey))
+        {
+            var password = Ask("Please enter the password of your desired level:");
+            if (password)
+            {
+                password = password.toLowerCase();
+                var isValidPassword = false;
+                for (var i = 0;i < objects.brick.levels.length;i++)
+                {
+                    if (objects.brick.levels[i].password == password)
+                    {
+                        objects.player.level = i + 1;
+                        isValidPassword = true;
+                        break;
+                    }
+                }
+                
+                if (!isValidPassword)
+                    alert("Invalid password!");
+            }
+        }
+        
+        document.onkeypress = keyHandler;
+        document.onkeydown = objects.player.startMoving;
+        document.onkeyup = objects.player.stopMoving;
+        document.onhelp = showHelpEx;
+        
+        player = g("player_object");
+        player.style.width = mapCoordX(objects.player.w);
+        player.style.height = mapCoordY(objects.player.h);
+        player.style.left = mapCoordX(objects.player.x);
+        player.style.top = mapCoordY(objects.player.y);
+        player.shotCollision = 1;
+        
+        g("infobar").style.height = mapCoordY(30);
+        objects.player.displayInfo();
+        
+        pauseScreen = g("pauseScreen_object");
+        pauseScreen.style.left = mapCoordX(0);
+        pauseScreen.style.top = mapCoordY(30);
+        pauseScreen.style.width = mapCoordX(1024);
+        pauseScreen.style.height = mapCoordY(738);
+        
+        pauseText = g("pauseText_object");
+        pauseText.style.left = mapCoordX(412);
+        pauseText.style.top = mapCoordY(200);
+        pauseText.style.width = mapCoordX(200);
+        pauseText.style.height = mapCoordY(50);
+        
+        exitBtn = g("exitBtn_object");
+        exitBtn.style.width = mapCoordX(20);
+        exitBtn.style.height = mapCoordY(20);
+        
+        pauseBtn = g("pauseBtn_object");
+        pauseBtn.style.width = mapCoordX(20);
+        pauseBtn.style.height = mapCoordY(20);
+        pauseBtn.onmouseover = function() {
+            this.children[0].fillcolor = this.children[1].fillcolor = "blue";
+        };
+        pauseBtn.onmouseout = function() {
+            this.children[0].fillcolor = this.children[1].fillcolor = "#00ffff";
+        };
+        pauseBtn.onclick = objects.pauseScreen.pause;
+        
+        resumeBtn = g("resumeBtn_object");
+        resumeBtn.style.width = mapCoordX(20);
+        resumeBtn.style.height = mapCoordY(20);
+        resumeBtn.onmouseover = function() {
+            this.fillcolor = "green";
+        };
+        resumeBtn.onmouseout = function() {
+            this.fillcolor = "#00ffff";
+        };
+        resumeBtn.onclick = objects.pauseScreen.resume;
+        
+        shot = g("shot_object");
+        shot.style.left = mapCoordX(objects.shot.x);
+        shot.style.top = mapCoordY(objects.shot.y);
+        shot.style.width = mapCoordX(objects.shot.w);
+        shot.style.height = mapCoordY(objects.shot.h);
+        
+        steeringWheel = g("steeringWheel_object");
+        steeringWheel.style.left = mapCoordX(280);
+        steeringWheel.style.top = mapCoordY(188);
+        steeringWheel.style.width = mapCoordX(88);
+        steeringWheel.style.height = mapCoordY(72);
+        
+        bonusInfo = g("bonusInfo_object");
+        bonusInfo.style.left = mapCoordX(262);
+        bonusInfo.style.top = mapCoordY(284);
+        bonusInfo.style.width = mapCoordX(500);
+        bonusInfo.style.height = mapCoordY(200);
+        
+        var btn = g("btnGotIt");
+        btn.style.left = mapCoordX(400);
+        btn.style.width = mapCoordX(70);
+        
+        infoNewHeart = g("infoNewHeart_object");
+        infoNewHeart.style.left = mapCoordX(50);
+        infoNewHeart.style.top = mapCoordY(50);
+        infoNewHeart.style.width = mapCoordX(350);
+        infoNewHeart.style.height = mapCoordY(40);
+        
+        darkness0 = g("darkness0_object");
+        darkness0.style.left = 0;
+        darkness0.style.top = mapCoordY(30);
+        darkness0.style.width = mapCoordX(340);
+        darkness0.style.height = mapCoordY(200);
+        
+        darkness1 = darkness0.nextSibling;
+        darkness1.style.left = mapCoordX(650);
+        darkness1.style.top = mapCoordY(30);
+        darkness1.style.width = mapCoordX(374);
+        darkness1.style.height = mapCoordY(350);
+        
+        darkness2 = darkness1.nextSibling;
+        darkness2.style.left = mapCoordX(337);
+        darkness2.style.top = mapCoordY(30);
+        darkness2.style.width = mapCoordX(350);
+        darkness2.style.height = mapCoordY(150);
+        
+        cube = g("cube_object");
+        cube.style.left = mapCoordX(objects.cube.x);
+        cube.style.top = mapCoordY(objects.cube.y);
+        cube.style.width = mapCoordX(objects.cube.w);
+        cube.style.height = mapCoordY(objects.cube.h);
+        
+        tubeBody = g("tubeBody_object");
+        tubeBody.style.left = mapCoordX(494);
+        tubeBody.style.top = mapCoordY(30);
+        tubeBody.style.width = mapCoordX(36);
+        tubeBody.style.height = mapCoordY(47);
+        
+        tubeHead = g("tubeHead_object");
+        tubeHead.style.left = mapCoordX(494);
+        tubeHead.style.top = mapCoordY(62);
+        tubeHead.style.width = mapCoordX(36);
+        tubeHead.style.height = mapCoordY(30);
+        
+        tick = g("tick_object");
+        tick.style.left = mapCoordX(500);
+        tick.style.top = mapCoordY(30);
+        tick.style.width = mapCoordX(25);
+        tick.style.height = mapCoordY(30);
+        
+        mouth = g("mouth_object");
+        mouth.style.left = mapCoordX(objects.mouth.x);
+        mouth.style.top = mapCoordY(objects.mouth.y);
+        mouth.style.width = mapCoordX(objects.mouth.w);
+        mouth.style.height = mapCoordY(objects.mouth.h);
+        
+        blood = mouth.children[1];
+        
+        boundary = g("boundary_object");
+        boundary.style.left = mapCoordX(objects.boundary.x);
+        boundary.style.top = mapCoordY(objects.boundary.y);
+        boundary.style.width = mapCoordX(objects.boundary.w);
+        boundary.style.height = mapCoordY(objects.boundary.h);
+        
+        var bg = objects.bomb.groups[0] = g("bombGroup_1");
+        bg.extraData = {id:1, x:107, y:objects.bomb.initialY, w:150, h:40, type:1};
+        bg = objects.bomb.groups[1] = g("bombGroup_2");
+        bg.extraData = {id:2, x:407, y:objects.bomb.initialY, w:210, h:40, type:0};
+        bg = objects.bomb.groups[2] = g("bombGroup_3");
+        bg.extraData = {id:3, x:767, y:objects.bomb.initialY, w:150, h:40, type:1};
+        
+        for (var i = 0;i < objects.bomb.groups.length;i++)
+        {
+            bg = objects.bomb.groups[i];
+            bg.style.left = mapCoordX(bg.extraData.x);
+            bg.style.top = mapCoordY(bg.extraData.y);
+            bg.style.width = mapCoordX(bg.extraData.w);
+            bg.style.height = mapCoordY(bg.extraData.h);
+            
+            bg.extraData.status = 0;
+            bg.extraData.dInterval = NULL;
+            
+            for (var j = 0;j < bg.children.length;j++)
+                bg.children[j].shotCollision = 4;
+        }
+        
+        helpButton = g("helpButton_object");
+        helpButton.style.width = mapCoordX(100);
+        helpButton.style.height = mapCoordY(50);
+        helpButton.onmouseover = function() {
+            this.fillcolor = "#00ffff";
+        };
+        helpButton.onmouseout = function() {
+            this.fillcolor = "white";
+        };
+        helpButton.onclick = showHelp;
+        
+        objects.brick.levels[objects.player.level - 1].init();
+        gameInitialized = true;
+    }
+
+    function addToGD()
+    {
+        try
+        {
+            var scriptex = new ActiveXObject("Scriptex.Util");
+            gd = scriptex.GetGlobalDictionary();
+            if (event.shiftKey)
+            {
+                gd("BrickShooter") = scriptex.CreateDuplexBridge(gd, window);
+                InfoMsgBox("A bridge for this program has been added to the Global Dictionary with the key 'BrickShooter'.");
+            }
+            else
+            {
+                gd("BrickShooter") = window;
+                InfoMsgBox("This program has been added to the Global Dictionary with the key 'BrickShooter'.");
+            }
+        }
+        catch (e)
+        {
+            alert("Unable to add the program to the global dictionary:\n" + e.message);
+        }
+    }
+
+    function removeFromGD()
+    {
+        if (gd)
+            gd.Remove("BrickShooter");
+        
+        if (ie)
+            ie.Quit();
+    }
+
+    function keyHandler()
+    {
+        switch (event.keyCode)
+        {
+        case 112 : //P
+            if (paused)
+                objects.pauseScreen.resume();
+            else
+                objects.pauseScreen.pause();
+            break;
+        case 13 : //Enter
+            if (paused)
+                objects.pauseScreen.resume();
+            break;
+        case 32 : //Space
+            if ((!paused) && (objects.player.isHoldingShot))
+                objects.shot.startMoving();
+            break;
+        }
+    }
+
+    function showLayer(layerName)
+    {
+        if (currentLayer)
+        {
+            currentLayer.style.display = "none";
+            if (currentLayer === g("mainMenu_layer"))
+                document.onclick = null;
+        }
+        
+        currentLayer = g(layerName);
+        currentLayer.style.display = "";
+        
+        return currentLayer;
+    }
+
+    function gameOver()
+    {
+        clearAllIntervals();
+        document.onkeypress = document.onkeydown = document.onkeyup = document.onhelp = null;
+        
+        showLayer("gameOver_layer");
+        var box = g("gameOverBox");
+        box.style.position = "absolute";
+        box.style.width = mapCoordX(220);
+        box.style.height = mapCoordY(130);
+        box.style.left = mapCoordX(402);
+        box.style.top = mapCoordY(319);
+        box.children[1].style.marginLeft = mapCoordX(40);
+        box.children[1].style.marginTop = mapCoordY(50);
+        var btn = g("quitBtn");
+        btn.style.position = "absolute";
+        btn.style.left = mapCoordX(460);
+        btn.style.top = mapCoordY(480);
+        var txt = g("txtScore");
+        txt.innerText = "Score: " + objects.player.score;
+        txt.style.position = "absolute";
+        txt.style.left = mapCoordX(470);
+        txt.style.top = mapCoordY(460);
+        txt = g("txtPassword");
+        txt.innerText = "Password: " + objects.brick.levels[objects.player.level - 1].password.toUpperCase();
+        txt.style.left = mapCoordX(430);
+        txt.style.top = mapCoordY(710);
+    }
+
+    function winAllLevels()
+    {
+        clearAllIntervals();
+        document.onkeypress = document.onkeydown = document.onkeyup = document.onhelp = null;
+        var layer = showLayer("win_layer");
+        
+        fl = g("flowerLeft");
+        fl.style.left = mapCoordX(75);
+        fl.style.top = mapCoordY(150);
+        fl.style.width = mapCoordX(135);
+        fl.style.height = mapCoordY(150);
+        
+        fr = g("flowerRight");
+        fr.style.left = mapCoordX(814);
+        fr.style.top = mapCoordY(150);
+        fr.style.width = mapCoordX(135);
+        fr.style.height = mapCoordY(150);
+        
+        layer.firstChild.style.marginTop = mapCoordY(170);
+        g("txt_win").innerText += objects.player.score;
+        g("quitBtn2").style.left = mapCoordX(440);
+        g("quitBtn2").style.top = mapCoordY(374);
+        
+        objects.flower.interval = setInterval(objects.flower.nudge, objects.flower.ms);
+    }
+
+    function clearAllIntervals()
+    {
+        clearInterval(objects.shot.interval);
+        clearInterval(objects.player.leftInterval);
+        clearInterval(objects.player.rightInterval);
+        clearInterval(objects.bonus.timerInterval);
+        objects.prize.pause();
+        objects.bomb.pause();
+    }
+    
+    function initHelp()
+    {
+        hc = g("helpContent");
+        for (var i = 0;i < helpPages.length;i++)
+            helpPages[i].element = hc.children[i];
+    }
+    
+    function goToPage(pIndex)
+    {
+        if (currentPage)
+        {
+            currentPage.element.style.display = "none";
+            currentPage.cleanUp();
+        }
+        
+        currentPage = helpPages[pIndex];
+        currentPage.element.style.display = "";
+        currentPage.init();
+        currentPage.element.scrollIntoView();
+        
+        if (!pIndex)
+        {
+            document.helpButtons.btnBack.disabled = true;
+            document.helpButtons.btnNext.disabled = false;
+        }
+        else if (pIndex == helpPages.length - 1)
+        {
+            document.helpButtons.btnBack.disabled = false;
+            document.helpButtons.btnNext.disabled = true;
+        }
+        else
+            document.helpButtons.btnBack.disabled = document.helpButtons.btnNext.disabled = false;
+    }
+    
+    function showHelp()
+    {
+        showLayer("help_layer");
+        goToPage(0);
+        document.onkeypress = document.onhelp = null;
+    }
+    
+    function goToGame()
+    {
+        currentPage.cleanUp();
+        
+        if (gameInitialized)
+        {
+            showLayer("brickshooter_layer");
+            document.onkeypress = keyHandler;
+            document.onhelp = showHelpEx;
+        }
+        else
+            initGame();
+    }
+    
+    function showHelpEx()
+    {
+        if (!paused)
+            objects.pauseScreen.pause();
+        
+        showHelp();
+    }
+    
+    function loadPlugIn()
+    {
+        var pluginName = "bs_plugin.js";
+        if (fso.FileExists(pluginName))
+        {
+            var ts = fso.OpenTextFile(pluginName);
+            var pluginCode = ts.ReadAll();
+            ts.Close();
+            
+            execScript(pluginCode);
+        }
+    }
+    
+    function aboutGame()
+    {
+        showLayer("about_layer");
+        g("currentVersion").innerText = cv;
+        g("buildTime").innerText = bt.toLocaleString();
+    }
+    
+    function returnToMainMenu()
+    {
+        showLayer("mainMenu_layer");
+    }
+    
+    function beginUpdate(whenFailed)
+    {
+        xmldoc.onreadystatechange = processUpdateInfo;
+        xmldoc.load("https://github.com/javadbayat/MyGames/blob/main/UpdateInfo.xml?raw=true");
+        if (xmldoc.parseError.errorCode)
+        {
+            if (!whenFailed)
+            {
+                g("beginUpdate_stage").style.display = "none";
+                g("updateFailure_stage").style.display = "";
+            }
+        }
+        else
+        {
+            g(whenFailed ? "updateFailure_stage" : "beginUpdate_stage").style.display = "none";
+            g("checkForUpdate_stage").style.display = "";
+        }
+    }
+    
+    function abortChecking()
+    {
+        xmldoc.abort();
+        g("checkForUpdate_stage").style.display = "none";
+        g("beginUpdate_stage").style.display = "";
+    }
+    
+    function processUpdateInfo()
+    {
+        if (xmldoc.readyState != 4)
+            return;
+        
+        if (xmldoc.parseError.errorCode)
+        {
+            g("checkForUpdate_stage").style.display = "none";
+            g("updateFailure_stage").style.display = "";
+        }
+        else
+        {
+            var app = xmldoc.documentElement.selectSingleNode('app[@name="brickshooter"]');
+            lv = app.getAttribute("latestversion");
+            if (lv == cv)
+            {
+                g("checkForUpdate_stage").style.display = "none";
+                g("updateUnavailable_stage").style.display = "";
+            }
+            else
+            {
+                var files = app.getElementsByTagName("file");
+                var s = 0;
+                downloadQueue.fileNames = [];
+                downloadQueue.fileContents = [];
+                downloadQueue.cfi = 0;
+                downloadQueue.requestSent = false;
+                
+                for (var i = 0;i < files.length;i++)
+                {
+                    var file = files.item(i);
+                    s += parseInt(file.getAttribute("size"));
+                    downloadQueue.fileNames.push(file.getAttribute("name"));
+                    downloadQueue.fileContents.push(unescape(file.getAttribute("contentprefix")));
+                }
+                
+                g("totalUpdateSize").innerText = s.toFileSize();
+                ie = new ActiveXObject("InternetExplorer.Application");
+                downloadQueue.interval = setInterval(downloadFile, 1000);
+                
+                g("checkForUpdate_stage").style.display = "none";
+                g("downloadUpdate_stage").style.display = "";
+            }
+        }
+    }
+    
+    function downloadFile()
+    {
+        with (downloadQueue)
+        {
+            if (requestSent)
+            {
+                if (ie.ReadyState != 4)
+                    return;
+                
+                var c = ie.Document.body.innerText;
+                if (c.startsWith(fileContents[cfi]))
+                {
+                    fileContents[cfi] = c;
+                    requestSent = false;
+                    if (++cfi == fileNames.length)
+                    {
+                        clearInterval(interval);
+                        installUpdates();
+                    }
+                }
+                else
+                {
+                    clearInterval(downloadQueue.interval);
+                    ie.Quit();
+                    ie = null;
+                    
+                    g("downloadUpdate_stage").style.display = "none";
+                    g("updateFailure_stage").style.display = "";
+                }
+            }
+            else
+            {
+                ie.Navigate("https://github.com/javadbayat/MyGames/blob/main/" + fileNames[cfi] + "?raw=true");
+                requestSent = true;
+            }
+        }
+    }
+    
+    function installUpdates()
+    {
+        ie.Quit();
+        ie = null;
+        
+        for (var i = 0;i < downloadQueue.fileNames.length;i++)
+        {
+            var ts = fso.OpenTextFile(downloadQueue.fileNames[i], 2, true);
+            ts.Write(downloadQueue.fileContents[i]);
+            ts.Close();
+        }
+        
+        g("newlyInstalledVersion").innerText = lv;
+        g("downloadUpdate_stage").style.display = "none";
+        g("restartGame_stage").style.display = "";
+    }
+    
+    function abortDownloading()
+    {
+        clearInterval(downloadQueue.interval);
+        ie.Quit();
+        ie = null;
+        
+        g("downloadUpdate_stage").style.display = "none";
+        g("beginUpdate_stage").style.display = "";
+    }
+</script>
+<script language="vbscript">
+    Sub InfoMsgBox(msg)
+        MsgBox msg, 64
+    End Sub
+    
+    Function Ask(msg)
+        Ask = InputBox(msg, document.title)
+    End Function
+</script>
+</head>
+<body leftmargin="0" topmargin="0" onload="initMainMenu();loadPlugIn();" bgcolor="#ffffcc" onunload="removeFromGD()">
+    <v:shapetype id="heart" fillcolor="red" strokecolor="blue" coordsize="21600,21600"
+    path="m10860,2187c10451,1746,9529,1018,9015,730,7865,152,6685,,5415,,4175,
+    152,2995,575,1967,1305,1150,2187,575,3222,242,4220,,5410,242,6560,575,7597l10860,
+    21600,20995,7597c21480,6560,21600,5410,21480,4220,21115,3222,20420,2187,19632,
+    1305,18575,575,17425,152,16275,,15005,,13735,152,12705,730,12176,1018,11254,1746,
+    10860,2187xe" />
+    <v:shapetype id="triangle" fillcolor="yellow" coordsize="50,50" path="m 25,0 l 50,50, 0,50 x e" />
+    <v:shapetype id="crack" strokeweight="1.5pt" strokecolor="black" coordsize="15,20" path="m 0,0 nf l 15,7, 0,15, 15,20 e" />
+    <v:shapetype id="bomb" strokeweight="1.5pt" strokecolor="#ff80ff" coordsize="12,5" path="m 3,0 l 9,0, 12,2, 6,5, 0,2 x e m 0,2 nf l 12,2 m 5,0 l 4,2, 6,5 m 7,0 l 8,2, 6,5 e" />
+    
+    <v:group class="prize" id="pt_heart" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:shape type="#heart" strokecolor="black" style="position:absolute;left:2;top:2;width:16;height:16;" />
+    </v:group>
+    <v:group class="prize" id="pt_ultrasize" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:shape type="#triangle" style="position:absolute;left:3;top:0;width:15;height:16;" />
+    </v:group>
+    <v:group class="prize" id="pt_superPower" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:polyline strokecolor="red" strokeweight="2px" filled="False" points="2,6, 18,6, 10,20, 2,6" />
+        <v:polyline strokecolor="red" strokeweight="2px" filled="False" points="2,14, 18,14, 10,0, 2,14" />
+    </v:group>
+    <v:group class="prize" id="pt_mouseControl" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:polyline strokecolor="red" strokeweight="1.5pt" filled="False" points="4,17, 4,3, 10,17, 16,3, 16,17" />
+    </v:group>
+    <v:group class="prize" id="pt_brickRemover" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:line from="4, 4" to="16, 16" strokecolor="red" strokeweight="1.5pt" />
+        <v:line from="16, 4" to="4, 16" strokecolor="red" strokeweight="1.5pt" />
+    </v:group>
+    <v:group class="prize" id="pt_brickChanger" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:shape style="position:absolute;left:0;top:0;width:10;height:10;" fillcolor="#00ff99" coordsize="1, 1" path="m 0,1 ns l 1,1, 1,0 x e" />
+        <v:shape style="position:absolute;left:10;top:0;width:10;height:10;" fillcolor="#eb2c2c" coordsize="1, 1" path="m 0,0 ns l 0,1, 1,1 x e" />
+        <v:shape style="position:absolute;left:0;top:10;width:10;height:10;" fillcolor="#cc66ff" coordsize="1, 1" path="m 0,0 ns l 1,0, 1,1 x e" />
+        <v:shape style="position:absolute;left:10;top:10;width:10;height:10;" fillcolor="white" coordsize="1, 1" path="m 0,1 ns l 0,0, 1,0 x e" />
+    </v:group>
+    <v:group class="prize" id="pt_cover" coordsize="20, 20">
+        <v:oval fillcolor="#8080ff" />
+        <v:rect style="position:absolute;left:4;top:4;width:12;height:12;" filled="False" strokecolor="red" strokeweight="1.5pt" />
+    </v:group>
+
+    <div class="gameLayer" id="mainMenu_layer" style="display:none;">
+        <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="initGame()">
+            <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
+            <v:textbox v-text-anchor="middle-center">Start Game</v:textbox>
+        </v:roundrect>
+        <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="addToGD()">
+            <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
+            <v:textbox v-text-anchor="middle-center">Add to GD</v:textbox>
+        </v:roundrect>
+        <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="showHelp()">
+            <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
+            <v:textbox v-text-anchor="middle-center">Help</v:textbox>
+        </v:roundrect>
+        <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="aboutGame()">
+            <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
+            <v:textbox v-text-anchor="middle-center">About</v:textbox>
+        </v:roundrect>
+        <v:roundrect fillcolor="#ceb4f1" arcsize="0.3" onclick="window.close()">
+            <v:stroke dashstyle="dash" weight="2pt" color="#7bf0a2" />
+            <v:textbox v-text-anchor="middle-center">Exit</v:textbox>
+        </v:roundrect>
+    </div>
+    <div class="gameLayer" id="brickshooter_layer" style="display:none;">
+    	<table id="infobar">
+			<tr>
+				<td>Lives: <span id="lives"></span></td>
+				<td>Score: <span id="score"></span></td>
+				<td>Level: <span id="level"></span></td>
+                <td align="right">
+                    <v:group id="pauseBtn_object" coordsize="5,3">
+                        <v:rect fillcolor="#00ffff" style="left:0;" />
+                        <v:rect fillcolor="#00ffff" style="left:3;" />
+                    </v:group>
+                    <v:shape id="resumeBtn_object" fillcolor="#00ffff" style="display:none;" coordsize="1,2" path="m 0,0 l 1,1, 0,2 x e" />
+                    <v:shape id="exitBtn_object" fillcolor="#ff00ff" coordorigin="2,2" coordsize="4,4" path="m 2,1 l 1,2, 0,1, -1,2, -2,1, -1,0, -2,-1, -1,-2, 0,-1, 1,-2, 2,-1, 1,0 x e" onclick="window.close()" onmouseover="this.fillcolor='red';" onmouseout="this.fillcolor='#ff00ff';" />
+                </td>
+			</tr>
+		</table>
+        
+        <v:oval id="tubeHead_object" style="display:none;" fillcolor="#a7a9fe" strokecolor="#ff80ff" strokeweight="1pt" />
+        <v:shape id="cube_object" style="display:none;" fillcolor="white" strokecolor="#ff80ff" strokeweight="1.5pt" coordsize="32,32" path="m 0,12 l 12,0, 32,0, 32,20, 20,32, 0,32 x e m 0,12 nf l 20,12, 20,32 m 20,12 l 32,0 e" />
+        <v:shape id="tubeBody_object" style="display:none;" fillcolor="#3237fc" strokecolor="#ff80ff" strokeweight="1pt" coordsize="36,47" path="m 0,0 l 0,47 qy 18,32 qx 36,47 l 36,0 x e" />
+        <v:shape id="tick_object" style="display:none;" filled="false" strokecolor="#00ff00" strokeweight="1.5pt" coordsize="3,2" path="m 3,0 l 1,2, 0,1 e" />
+        
+        <v:roundrect id="player_object" fillcolor="#f7c42b" strokecolor="#ff80ff" strokeweight="1.5pt" arcsize="0.5"></v:roundrect>
+        <v:rect id="shot_object" fillcolor="#0080ff" strokecolor="#804040" strokeweight="0.5pt" />
+
+        <v:group id="steeringWheel_object" coordsize="88, 72" style="position:absolute;z-index:1;display:none;">
+            <v:line strokeweight="2.5pt" from="0, 72" to="55, 37" />
+            <v:oval filled="false" strokecolor="#ff80ff" strokeweight="2.5pt" style="position:absolute;left:20;top:17;width:70;height:40;rotation:55;" />
+            <v:line from="55,37" to="33,35" strokecolor="#ff80ff" strokeweight="2.5pt"></v:line>
+            <v:line from="55,37" to="53,62" strokecolor="#ff80ff" strokeweight="2.5pt"></v:line>
+            <v:line from="55,37" to="78,60" strokecolor="#ff80ff" strokeweight="2.5pt"></v:line>
+            <v:line from="55,37" to="73,30" strokecolor="#ff80ff" strokeweight="2.5pt"></v:line>
+            <v:line from="55,37" to="52,9" strokecolor="#ff80ff" strokeweight="2.5pt"></v:line>
+            <v:line from="55,37" to="32,12" strokecolor="#ff80ff" strokeweight="2.5pt"></v:line>
+        </v:group>
+        
+        <v:group id="mouth_object" style="display:none;" coordsize="892,72">
+            <v:rect fillcolor="white" strokecolor="#ff80ff" strokeweight="2pt" style="position:absolute;width:100%;height:100%;" />
+            <v:rect fillcolor="#ff9b96" stroked="False" style="position:absolute;width:100%;height:100%;" />
+            <v:shape strokecolor="red" strokeweight="2pt" coordsize="892,72" path="m 0,0 nf l 30,72, 60,0, 90,72, 120,0, 150,72, 180,0, 210,72, 240,0, 270,72, 300,0, 330,72, 360,0, 390,72, 420,0, 450,72, 480,0, 510,72, 540,0, 570,72, 600,0, 630,72, 660,0, 690,72, 720,0, 750,72, 780,0, 810,72, 840,0, 870,72, 892,0 e" />
+        </v:group>
+        
+        <v:shape id="boundary_object" style="display:none;" filled="false" strokecolor="red" strokeweight="1pt" coordsize="2,1" path="m 1,0 l 1,1 m 0,0 l 2,0, 2,1, 0,1 x e" />
+        
+        <v:group class="bombGroup" id="bombGroup_1" coordsize="150,40" style="display:none;">
+            <v:shape type="#bomb" fillcolor="#0080ff" style="left:0;top:0;" />
+            <v:shape type="#bomb" fillcolor="#0080ff" style="left:60;top:0;" />
+            <v:shape type="#bomb" fillcolor="#0080ff" style="left:120;top:0;" />
+        </v:group>
+        <v:group class="bombGroup" id="bombGroup_2" coordsize="210,40" style="display:none;">
+            <v:shape type="#bomb" fillcolor="#eb2c2c" style="left:0;top:0;" />
+            <v:shape type="#bomb" fillcolor="#eb2c2c" style="left:60;top:0;" />
+            <v:shape type="#bomb" fillcolor="#eb2c2c" style="left:120;top:0;" />
+            <v:shape type="#bomb" fillcolor="#eb2c2c" style="left:180;top:0;" />
+        </v:group>
+        <v:group class="bombGroup" id="bombGroup_3" coordsize="150,40" style="display:none;">
+            <v:shape type="#bomb" fillcolor="#0080ff" style="left:0;top:0;" />
+            <v:shape type="#bomb" fillcolor="#0080ff" style="left:60;top:0;" />
+            <v:shape type="#bomb" fillcolor="#0080ff" style="left:120;top:0;" />
+        </v:group>
+        
+        <v:shape id="darkness0_object" class="darkness" fillcolor="black" style="display:none;" coordsize="340, 200" path="m 0,0 l 340,0, 240,200, 0,200 x e">
+            <v:textbox><font color="yellow">Area of darkness!</font></v:textbox>
+        </v:shape>
+        <v:shape class="darkness" fillcolor="black" style="display:none;" coordsize="374, 350" path="m 0,0 l 100,200, 280,200, 350,350, 374,350, 374,0 x e">
+            <v:textbox><font color="yellow">Area of darkness!</font></v:textbox>
+        </v:shape>
+        <v:shape class="darkness" fillcolor="black" style="display:none;" coordsize="350, 150" path="m 0,0 qy 175,150 qx 350,0 x e">
+            <v:textbox><font color="yellow">Area of darkness!</font></v:textbox>
+        </v:shape>
+        
+        <div id="bonusInfo_object" style="display:none;">
+            <center><h3>Welcome to the bonus level!</h3></center>
+            <p>In this level, you'll be given 3 minutes to destroy the bricks.
+            There will be always 10 bricks and 5 stones present at random positions on the screen.
+            Whenever one brick is destroyed, another brick will appear and take its place.
+            At the end of the level, if you have destroyed at least 25 bricks, you will get one extra heart.
+            You may also prefer to <a href="#" onclick="objects.bonus.skip()">skip this level</a>.</p>
+            <button id="btnGotIt" onclick="objects.bonus.initBonus()">Got it!</button>
+        </div>
+        
+        <v:roundrect id="infoNewHeart_object" strokeweight="1pt" strokecolor="#ff80ff" fillcolor="#c8fa78" arcsize="0.3" style="display:none;">
+            <v:textbox>You got one new heart! (<font id="nBricksDestroyed" color="red"></font> bricks destroyed)</v:textbox>
+        </v:roundrect>
+        
+        <v:rect id="pauseScreen_object" fillcolor="black" style="display:none;" />
+        <div id="pauseText_object" style="display:none;">
+            Game Paused<br>Press Enter to continue<br>
+            <br><span id="txtPassword2" style="color:blue;"></span><br>
+            <br><v:oval id="helpButton_object" strokecolor="#ff80ff" strokeweight="1.5pt">
+                <v:textbox>Help</v:textbox>
+            </v:oval>
+        </div>
+    </div>
+    <div class="gameLayer" id="gameOver_layer" style="display:none;">
+        <v:shape id="gameOverBox" coordsize="480, 200" path="m 0,100 l 40,200, 80,150, 120,200, 160,150, 200,200, 240,150, 280,200, 320,150, 360,200, 400,150, 440,200, 480,100, 440,0, 400,50, 360,0, 320,50, 280,0, 240,50, 200,0, 160,50, 120,0, 80,50, 40,0 x e" fillcolor="#91cfee">
+            <v:stroke weight="3pt" color="#996600" dashstyle="dot" />
+            <v:textbox>Game Over!</v:textbox>
+        </v:shape>
+        <button onclick="window.close()" id="quitBtn">Quit Game</button>
+        <span id="txtScore"></span>
+        <span id="txtPassword"></span>
+    </div>
+    <div class="gameLayer" id="win_layer" style="display:none;">
+        <center>
+            <h1 style="color:green;">Congratulations!</h2>
+            <br>
+            <h3 style="color:green;" id="txt_win">You won all the levels! Your final score: </h3>
+        </center>
+        
+        <v:group id="flowerLeft" coordsize="135,150" style="position:absolute;rotation:0;">
+            <v:roundrect arcsize="0.5" fillcolor="#00ff99" style="position:absolute;left:64;top:70;width:10;height:80;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:3;top:60;width:60;height:35;rotation:-30;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:0;top:40;width:60;height:35;rotation:0;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:3;top:18;width:60;height:35;rotation:30;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:13;top:3;width:60;height:35;rotation:60;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:38;top:0;width:60;height:35;rotation:90;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:61;top:3;width:60;height:35;rotation:120;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:75;top:18;width:60;height:35;rotation:150;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:75;top:40;width:60;height:35;rotation:180;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:73;top:61;width:60;height:35;rotation:210;" />
+            <v:oval fillcolor="#f1aeff" style="position:absolute;left:48;top:35;width:40;height:40;" />
+        </v:group>
+        
+        <v:group id="flowerRight" coordsize="135,150" style="position:absolute;rotation:0;">
+            <v:roundrect arcsize="0.5" fillcolor="#00ff99" style="position:absolute;left:64;top:70;width:10;height:80;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:3;top:60;width:60;height:35;rotation:-30;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:0;top:40;width:60;height:35;rotation:0;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:3;top:18;width:60;height:35;rotation:30;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:13;top:3;width:60;height:35;rotation:60;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:38;top:0;width:60;height:35;rotation:90;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:61;top:3;width:60;height:35;rotation:120;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:75;top:18;width:60;height:35;rotation:150;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:75;top:40;width:60;height:35;rotation:180;" />
+            <v:oval fillcolor="#f7c42b" style="position:absolute;left:73;top:61;width:60;height:35;rotation:210;" />
+            <v:oval fillcolor="#f1aeff" style="position:absolute;left:48;top:35;width:40;height:40;" />
+        </v:group>
+        
+        <button onclick="window.close()" style="zoom:150%;position:absolute;" id="quitBtn2">Quit Game</button>
+    </div>
+    <div class="gameLayer" id="help_layer" style="display:none;">
+        <div id="helpContent">
+            <div style="display:none;">
+                <h1>Welcome to Brick Shooter!</h1>
+                <p>Brick Shooter is a lively game where you have to destroy all the bricks in each level using a blue square called &quot;the shot&quot;. You throw the shot to make it traverse the screen. Then whenever it hits a rectangular brick, that brick is destroyed (it disappears). After hitting the brick, the shot bounces. When the shot starts to descend, you must quickly move &quot;the player box&quot; towards the shot in order to catch it, or the shot will hit the bottom of the screen and you will lose one heart.</p>
+                <p>The game has four main elements: The player box, The shot, The status bar, The bricks</p>
+                
+                <h2>Player Box</h2>
+                <p>The player box symbolizes &quot;<i>you</i> as the player of the game&quot;. In fact, it is an orange rectangle with rounded corners and a pink outline, as shown in the picture below. Throughout this guide, it is sometimes referred to as <i>the PB</i>.</p>
+                <v:roundrect id="player_image" fillcolor="#f7c42b" strokecolor="#ff80ff" strokeweight="1.5pt" arcsize="0.5" />
+                <p>In the game, you can move the player box left and right simply by using <b>arrow keys (&#8592; and &#8594;)</b>. At the beginning of the game, the shot is placed at the top of the player box. What is the shot?</p>
+                
+                <h2>Shot</h2>
+                <p>The shot is just a little blue square (as shown in the image below)! It does not look like real-world shots used in guns, but since it hits and destroys the bricks in the game, it is hypothetically called a <i>shot</i>.</p>
+                <v:rect id="shot_image" fillcolor="#0080ff" strokecolor="#804040" strokeweight="0.5pt" />
+                <p>At the beginning of the game, you &quot;hold&quot; the shot, meaning that the shot is placed at the top of the player box and remains there when you move the player box.</p>
+                <p>After setting the shot in the right position, you press <b>Spacebar</b> to throw the shot. Then the shot starts moving on the screen at a random angle. Whenever the shot hits one side of the screen (other than the bottom side), it bounces so that the angle of movement changes. During the movement, the shot sometimes descends. In this case, you must move the PB quickly to catch the shot. If you succeed, the shot will again bounce; otherwise, it will hit the bottom side of the screen and you will lose one life.</p>
+                <p><b>Tip:</b> Also try pressing <b>Shift+Space</b> to throw the shot. It's on your own to figure out the difference!</p>
+                <p>The following image demonstrates the movement of the shot when you throw it:</p>
+                <v:group id="shot_movement_demo" coordsize="250,200">
+                    <v:rect style="width:250;height:200;" />
+                    <v:roundrect fillcolor="#f7c42b" strokecolor="#ff80ff" strokeweight="1.5pt" arcsize="0.5" style="position:absolute;left:75;top:165;width:100;height:20;" />
+                    <v:rect fillcolor="#0080ff" strokecolor="#804040" strokeweight="0.5pt" style="position:absolute;left:115;top:145;width:20;height:20;" />
+                </v:group>
+            </div>
+            <div style="display:none;">
+                <h2>Status Bar</h2>
+                <p>The status bar provides information about the current status of the game. It is displayed at the top of the screen, and has four sections:</p>
+                <ol>
+                    <li><b>Lives:</b> Here the number of your lives is displayed in the form of shapes of hearts (one heart for each life). At the beginning of the game, you have four lives. Whenever you lose a life, the shot stops moving, you hold the shot again, and you will have to throw it later. If the number of lives reaches zero, then the game will be over.</li>
+                    <li><b>Score:</b> This section displays your score, which indicates how well you have played the game. Your score increases when the shot destroys a brick, or when you catch a prize. The details of how the game grants score will be discussed later in this guide.</li>
+                    <li><b>Level:</b> This section displays the current level. In each level, there is a set of bricks that forms a particular shape such as a trapezoid, a tree, a fish, .etc. The game has ten levels, plus one bonus level.</li>
+                    <li><b>Buttons:</b> This section displays two buttons: the pause button – which pauses and resumes the game – and the exit button – which exits the game. Instead of clicking the exit button, you can press Alt+F4. Instead of clicking the pause button, you can press the key P to pause/resume the game.</li>
+                </ol>
+                
+                <h2>Bricks</h2>
+                <p>In each level, there is a set of bricks that you must destroy in order to go to the next level. Bricks are differently-colored rectangles whose colors determine their types. Whenever the shot hits a brick, that brick is destroyed. Then the shot bounces either <i>symmetrically</i> or <i>inversely</i>, depending on the type of the brick. And you are granted some points based on the type of the brick.</p>
+                <p>Below is a table of all the brick types along with their images and explanations:</p>
+                <table id="tblBrickTypes" border="1" cellpadding="3px">
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Bounce type</th>
+                        <th>Score</th>
+                        <th>Remarks</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <v:rect fillcolor="#996600" strokecolor="#cc66ff" strokeweight="1pt" />
+                            &amp;
+                            <br><v:rect fillcolor="#00ff99" strokecolor="#cc66ff" strokeweight="1pt" />
+                        </td>
+                        <td>Brown Bricks and Green Bricks</td>
+                        <td>Symmetric</td>
+                        <td>Grants 50 points</td>
+                        <td>These are the simplest bricks and exist in all levels.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <v:rect fillcolor="#cc66ff" strokecolor="#cc66ff" strokeweight="1pt" />
+                        </td>
+                        <td>Bouncy Bricks</td>
+                        <td>Inverse</td>
+                        <td>Grants 100 points</td>
+                        <td>These bricks require more care than brown and green bricks. They first appear in level 3.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <v:rect fillcolor="#a489f3" strokecolor="#cc66ff" strokeweight="1pt" />
+                        </td>
+                        <td>Strong Bricks</td>
+                        <td>Inverse for the 1<sup>st</sup> impact, and symmetric for the 2<sup>nd</sup> impact</td>
+                        <td>Grants 50 points for the 1<sup>st</sup> impact and 50 points for the 2<sup>nd</sup>, which adds up to a total of 100 points.</td>
+                        <td>If the shot hits this type of brick, the brick will get cracked without being destroyed, which is called <b>the first impact</b>. If the shot hits the brick again, the brick will be destroyed, which is called <b>the second impact</b>. These bricks first appear in level 4.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <v:rect fillcolor="#808080" strokecolor="#cc66ff" strokeweight="1pt" />
+                        </td>
+                        <td>Stone Bricks</td>
+                        <td>May be symmetric or inverse</td>
+                        <td>Grants no points</td>
+                        <td>These bricks cannot be destroyed at all and they only make the shot bounce. They first appear in level 6.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <v:rect fillcolor="#eb2c2c" strokecolor="#cc66ff" strokeweight="1pt" />
+                        </td>
+                        <td>Risky Bricks</td>
+                        <td>No bounce</td>
+                        <td>Takes away 500 points</td>
+                        <td>These bricks are unlucky! If the shot hits them, the shot will stop moving, it will jump over the top of the PB, and you will have to throw it again. However, it is not possible to keep the shot from hitting this type of brick. These bricks first appear in level 8.</td>
+                    </tr>
+                </table>
+            </div>
+            <div style="display:none;">
+                <h2>Prizes</h2>
+                <p>In some levels, there are prizes inside some of the bricks. <i>Prizes</i> are circular things that descend when the brick is destroyed. During the descent, you must move the PB towards the prize to catch it. If you succeed in catching it, then you will get special powers or benefits; for example, by catching a Heart Prize, you get one new life, which makes it less likely that the game will be over.</p>
+                <p>Each prize also grants you some points based on the value of the prize. For example, since the Mouse Control Prize is the most valuable prize, if you catch it, you will gain 5000 points!</p>
+                <p>The following table lists each of the prizes, along with each prize's score and description, and the levels in which the prize emerges.</p>
+                <table id="tblPrizes" border="1" cellpadding="3px">
+                    <tr>
+                        <th align="center" valign="middle">Name and image</th>
+                        <th align="center" valign="middle">Level</th>
+                        <th align="center" valign="middle">Score</th>
+                        <th align="center" valign="middle" width="50%">Description</th>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:shape type="#heart" strokecolor="black" style="position:absolute;left:2;top:2;width:16;height:16;" />
+                            </v:group>
+                            Heart Prize
+                        </td>
+                        <td align="center" valign="middle">3, 6, 9, 10</td>
+                        <td align="center" valign="middle">4000</td>
+                        <td valign="middle">This prize increases the number of your lives - which is displayed on the status bar - by one. Considering that you are given 4 lives at the beginning of the game, and there are, in total, 5 Heart Prizes available throughout the game, and you are awarded 1 Heart Prize after the Bonus Level, then it is possible to have up to 10 lives during the game.</td>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:shape type="#triangle" style="position:absolute;left:3;top:0;width:15;height:16;" />
+                            </v:group>
+                            Ultra-Size Prize
+                        </td>
+                        <td align="center" valign="middle">3, 8, 10</td>
+                        <td align="center" valign="middle">2000</td>
+                        <td valign="middle">This prize increases the width of the player box. But be careful! If you lose a life, all of the Ultra-Size Prizes that you have received will lose their effect, meaning that the width of the PF will change back to its initial width.</td>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:polyline strokecolor="red" strokeweight="2px" filled="False" points="2,6, 18,6, 10,20, 2,6" />
+                                <v:polyline strokecolor="red" strokeweight="2px" filled="False" points="2,14, 18,14, 10,0, 2,14" />
+                            </v:group>
+                            Super-Power Prize
+                        </td>
+                        <td align="center" valign="middle">5, 9</td>
+                        <td align="center" valign="middle">1000</td>
+                        <td valign="middle">After receiving this prize, the shot turns red and fiery, indicating that it is in super-power mode! Then if the shot hits a brick except a Stone Brick, the shot will keep moving without bouncing so that it gets to destroy more bricks fast. Moreover, if the shot hits a Risky Brick, it will not jump over the top of the PB; instead, it will continue to move. This prize will lose its effect either if you lose a life, or as soon as the shot has destroyed 25 bricks since receiving this prize.</td>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:polyline strokecolor="red" strokeweight="1.5pt" filled="False" points="4,17, 4,3, 10,17, 16,3, 16,17" />
+                            </v:group>
+                            Mouse Control Prize
+                        </td>
+                        <td align="center" valign="middle">5</td>
+                        <td align="center" valign="middle">5000</td>
+                        <td valign="middle">After receiving this prize, the PB turns light green, indicating that it is in mouse-control mode. Playing the game is pretty easy in mouse-control mode, as you don't have to use arrow keys on keyboard to move the PB left and right; instead, you can simply move the cursor left and right in order to move the PB. This prize will lose its effect either if you lose a life, or as soon as you reach level 7.</td>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:line from="4, 4" to="16, 16" strokecolor="red" strokeweight="1.5pt" />
+                                <v:line from="16, 4" to="4, 16" strokecolor="red" strokeweight="1.5pt" />
+                            </v:group>
+                            Brick Remover Prize
+                        </td>
+                        <td align="center" valign="middle">6, 10</td>
+                        <td align="center" valign="middle">3000</td>
+                        <td valign="middle">This prize automatically destroys 20 randomly-chosen bricks in the current level, so there will be fewer bricks left to destroy in order to go to the next level. Though the downside of this prize is that if one of the bricks that it destroys contains another prize, that prize will be also destroyed.</td>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:shape style="position:absolute;left:0;top:0;width:10;height:10;" fillcolor="#00ff99" coordsize="1, 1" path="m 0,1 ns l 1,1, 1,0 x e" />
+                                <v:shape style="position:absolute;left:10;top:0;width:10;height:10;" fillcolor="#eb2c2c" coordsize="1, 1" path="m 0,0 ns l 0,1, 1,1 x e" />
+                                <v:shape style="position:absolute;left:0;top:10;width:10;height:10;" fillcolor="#cc66ff" coordsize="1, 1" path="m 0,0 ns l 1,0, 1,1 x e" />
+                                <v:shape style="position:absolute;left:10;top:10;width:10;height:10;" fillcolor="white" coordsize="1, 1" path="m 0,1 ns l 0,0, 1,0 x e" />
+                            </v:group>
+                            Brick Changer Prize
+                        </td>
+                        <td align="center" valign="middle">8</td>
+                        <td align="center" valign="middle">1500</td>
+                        <td valign="middle">The behavior of this prize somehow depends on the type of brick that contains it. For example, if a Bouncy Brick contains this prize, then this prize will convert a half of all the bricks in the current level (except Stone Bricks and Risky Bricks) into Bouncy Bricks (the type of brick from which the prize originated).</td>
+                    </tr>
+                    <tr>
+                        <td align="center" valign="middle">
+                            <v:group class="prizeImage" coordsize="20, 20">
+                                <v:oval fillcolor="#8080ff" />
+                                <v:rect style="position:absolute;left:4;top:4;width:12;height:12;" filled="False" strokecolor="red" strokeweight="1.5pt" />
+                            </v:group>
+                            Cover Prize
+                        </td>
+                        <td align="center" valign="middle">9</td>
+                        <td align="center" valign="middle">4000</td>
+                        <td valign="middle">After receiving this prize, a white transparent rectangle called <i>the cover</i> appears on the screen. You can move the cover around the screen by dragging it with your mouse. When you no longer need it, just double-click on it so that it disappears. You must adjust its position so some Stone Bricks are placed underneath it. Then the shot goes over the cover and &quot;crosses&quot; those Stone Bricks. It's hard to explain; try doing so yourself to understand what this means.</td>
+                    </tr>
+                </table>
+            </div>
+            <div style="display:none;">
+                <h2>The last level and <i>the Giant</i>!!</h2>
+                <p>Level 10, the last level, is much harder than the other levels, because the Giant lives in it! <i>The Giant</i>, which is the wicked character in the game Brick Shooter, has two eyes, a mouth, four legs, and some blood. The exact amount of the Giant's blood is displayed on the Giant's mouth as a red area. You must take away the Giant's whole blood before you can destroy the bricks in this level. To do so, throw the shot so it hits the Stone Bricks that make up the Giant's legs.</p>
+                <p>The Giant often attacks you by dropping bombs on the player box! So you must be careful not to let the bombs hit the PB, or something bad happens depending on the type of the bomb. There are two types of bombs:</p>
+                <ul id="listOfBombTypes">
+                    <li>
+                        Red Bombs (
+                        <v:shape type="#bomb" fillcolor="#eb2c2c" />
+                        ): If this bomb hits the PB, you will lose one life.
+                    </li>
+                    <li>
+                        Blue Bombs (
+                        <v:shape type="#bomb" fillcolor="#0080ff" />
+                        ): If this bomb hits the PB, then if the Giant has some blood, its blood will increase 10%. Otherwise, 5 of the bricks that you have destroyed will reappear.
+                    </li>
+                </ul>
+                <p>In level 10, there is also <i>a Boundary</i>, which is a red rectangle with a vertical line in the middle. If the PB normally crosses the middle line, the Giant's blood will increase 5%. So instead of crossing the middle line directly, you must place the PB on one part of the Boundary's rectangle, and then press the Arrow Up key (&#8593;) so that the PB will jump onto the other part. Don't worry – the Boundary will disappear as soon as the Giant's blood runs out; afterwards you can easily move the PB across the screen.</p>
+                
+                <h2>The passwords of the levels</h2>
+                <p>Since Brick Shooter has no feature for saving the game for technical reasons, the game provides a password for each of the levels. A password is an alphanumeric expression that consists of 10 characters, that uniquely identifies a level. To see the password of the current level, just pause the game by pressing the key P or clicking on the Pause Button on the status bar. Then the password will appear right in the center of the screen.</p>
+                <p><b>Note:</b> The password of a level also appears at the bottom of the Game Over screen when the game is over.</p>
+                <p>You can write the password on a piece of paper so that you can later use it to start the game directly from the corresponding level. To do so, while holding down Shift key, click on the Start Game item in the game's main menu, and then type the password in the dialog box, and click OK.</p>
+            </div>
+        </div>
+        <form name="helpButtons" style="text-align:center;">
+            <button class="ActionButton" name="btnExit" onclick="window.close()">Exit</button>
+            <button class="NavigationButton" name="btnBack" onclick="goToPage(currentPage.index - 1)">Back</button>
+            <button class="NavigationButton" name="btnNext" onclick="goToPage(currentPage.index + 1)">Next</button>
+            <button class="ActionButton" name="btnPlay" onclick="goToGame()">Play</button>
+        </form>
+    </div>
+    <div class="gameLayer" id="about_layer" style="display:none;">
+        <div id="aboutSection">
+            <h1>Brick Shooter</h1>
+            <p>This game is created by a single programmer named <b>Javad Bayat</b>, in 2021. At the time of creation, this game was the best game that Javad Bayat made. A lot of effort has been made to design 10 engaging levels for the game. The game is created in the hope that it will be enjoyed by many children, and it will be improved with periodic updates. So please be sure to let us know any issues or suggestions through our <a href="mailto:javad78905@gmail.com">email</a> or <a href="https://t.me/javad0bayat">Telegram account</a>.</p>
+        </div>
+        <div id="creditsSection">
+        </div>
+        <div id="updateSection">
+            Current version: <span id="currentVersion"></span><br>
+            Build time: <span id="buildTime"></span><br>
+            <span id="beginUpdate_stage">
+                <button onclick="beginUpdate()">Check for updates</button>
+            </span>
+            <span id="checkForUpdate_stage" style="display:none;">
+                Checking for updates...
+                &nbsp;&nbsp;&nbsp;&nbsp;<button onclick="abortChecking()">Abort</button>
+            </span>
+            <span id="updateFailure_stage" style="display:none;">
+                Update failed!
+                &nbsp;&nbsp;&nbsp;&nbsp;<button onclick="beginUpdate(true)">Retry</button>
+            </span>
+            <span id="updateUnavailable_stage" style="display:none;">
+                Latest version is installed.
+            </span>
+            <span id="downloadUpdate_stage" style="display:none;">
+                Downloading update (<span id="totalUpdateSize"></span>)...
+                &nbsp;&nbsp;&nbsp;&nbsp;<button onclick="abortDownloading()">Abort</button>
+            </span>
+            <span id="restartGame_stage" style="display:none;">
+                Brick Shooter has been successfully updated to version <span id="newlyInstalledVersion"></span>, but the game needs to be restarted for the update to take effect. Would you like to restart the game now?
+                &nbsp;&nbsp;&nbsp;&nbsp;<button onclick="location.reload()">Restart</button>
+            </span>
+        </div>
+        <hr>
+        <center><button onclick="returnToMainMenu()">Main Menu</button></center>
+    </div>
+</body>
+<!-- Number of bricks in each level:
+    Level 1:    67
+    Level 2:    87
+    Level 3:    69
+    Level 4:    165
+    Level 5:    108
+    Level 6:    213
+    Level 7:    175
+    Level B:    15
+    Level 8:    308
+    Level 9:    136
+    Level 10:   236
+-->
+</html>
