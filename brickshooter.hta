@@ -953,11 +953,11 @@ v\:* {
                 ba[12].extraData.prize = objects.prize.create(prize_mouseControl, 100, 220);
                 ba[94].extraData.prize = objects.prize.create(prize_superPower, 640, 160);
             }},
-            {bricks:[[0, 30, 1], [60, 40, 1], [100, 60, 1], [140, 80, 1], [180, 100, 1], [220, 120, 1], [250, 140, 1], [280, 160, 1], [310, 180, 1], [340, 200, 1], [360, 220, 1], [380, 240, 1], [0, 50, 1], [10, 70, 1], [10, 90, 1], [20, 110, 1], [20, 130, 1], [30, 150, 1], [30, 170, 1], [40, 190, 1], [40, 210, 1], [50, 230, 1], [50, 250, 1], [60, 270, 1], [60, 290, 1], [70, 310, 1], [70, 330, 1],
+            {bricks:[[0, 30, 5], [60, 40, 1], [100, 60, 1], [140, 80, 1], [180, 100, 1], [220, 120, 1], [250, 140, 1], [280, 160, 1], [310, 180, 1], [340, 200, 1], [360, 220, 1], [380, 240, 1], [0, 50, 1], [10, 70, 1], [10, 90, 1], [20, 110, 1], [20, 130, 1], [30, 150, 1], [30, 170, 1], [40, 190, 1], [40, 210, 1], [50, 230, 1], [50, 250, 1], [60, 270, 1], [60, 290, 1], [70, 310, 1], [70, 330, 1],
                      [20, 350], [30, 370], [40, 390], [50, 410], [60, 430], [80, 450], [100, 470], [120, 490], [140, 510], [170, 530], [200, 550], [230, 530], [260, 510], [280, 490], [300, 470], [320, 450], [340, 430], [350, 410], [360, 390], [370, 370], [380, 350],
                      [440, 220, 3], [500, 220, 3], [440, 240, 3], [500, 240, 3], [440, 260, 3], [500, 260, 3], [440, 280, 3], [500, 280, 3], [440, 300, 3], [500, 300, 3], [440, 320, 3], [500, 320, 3], [440, 340, 3], [500, 340, 3], [455, 360, 3, 90], [455, 380, 3, 90], [465, 400, 3, 70], [465, 420, 3, 70], [470, 440, 3],
                      [440, 200, 3, 30], [530, 200, 3, 30], [430, 180, 3, 30], [540, 180, 3, 30], [420, 160, 3, 30], [550, 160, 3, 30], [410, 140, 3, 30], [560, 140, 3, 30], [400, 120, 3, 30], [570, 120, 3, 30], [390, 100, 3, 30], [580, 100, 3, 30], [380, 80, 3, 30], [590, 80, 3, 30], [370, 60, 3, 30], [600, 60, 3, 30],
-                     [560, 240], [580, 220], [600, 200], [630, 180], [660, 160], [690, 140], [720, 120], [760, 100], [800, 80], [840, 60], [880, 40], [940, 30], [940, 50], [930, 70], [930, 90], [920, 110], [920, 130], [910, 150], [910, 170], [900, 190], [900, 210], [890, 230], [890, 250], [880, 270], [880, 290], [870, 310], [870, 330], 
+                     [560, 240], [580, 220], [600, 200], [630, 180], [660, 160], [690, 140], [720, 120], [760, 100], [800, 80], [840, 60], [880, 40], [940, 30, 5], [940, 50], [930, 70], [930, 90], [920, 110], [920, 130], [910, 150], [910, 170], [900, 190], [900, 210], [890, 230], [890, 250], [880, 270], [880, 290], [870, 310], [870, 330], 
                      [920, 350, 1], [910, 370, 1], [900, 390, 1], [890, 410, 1], [880, 430, 1], [860, 450, 1], [840, 470, 1], [820, 490, 1], [800, 510, 1], [770, 530, 1], [740, 550, 1], [710, 530, 1], [680, 510, 1], [660, 490, 1], [640, 470, 1], [620, 450, 1], [600, 430, 1], [590, 410, 1], [580, 390, 1], [570, 370, 1], [560, 350, 1],
                      [70, 80, 1, 70], [80, 120, 1, 80], [160, 120, 1], [90, 160, 1, 70], [160, 160, 1], [220, 160, 1], [100, 200, 1], [160, 200, 1], [220, 200, 1], [280, 200, 1], [110, 240, 1, 90], [200, 240, 1], [260, 240, 1], [320, 240, 1], [120, 280, 1, 80], [200, 280, 1], [260, 280, 1], [320, 280, 1], [380, 280, 1], [130, 320, 1, 70], [200, 320, 1], [260, 320, 1], [320, 320, 1], [380, 320, 1],
                      [80, 350], [140, 350], [200, 350], [260, 350], [320, 350], [140, 450], [200, 450], [260, 450], [200, 510], [200, 490], [200, 470], [200, 430], [200, 410], [200, 390], [200, 370], [110, 410, 0, 90], [260, 410, 0, 90], 
@@ -985,6 +985,9 @@ v\:* {
                     case brick_stone :
                         brickElem.fillcolor = "#808080";
                         break;
+                    case brick_risky :
+                        brickElem.fillcolor = "#eb2c2c";
+                        break;
                     default :
                         brickElem.fillcolor = "#996600";
                     }
@@ -992,7 +995,7 @@ v\:* {
                     brickElem.strokecolor = "#cc66ff";
                     brickElem.strokeweight = "1pt";
                     brickElem.extraData = {type:ba[i][2] ? ba[i][2] : brick_brown};
-                    if (ba[i][2] != brick_stone)
+                    if ((ba[i][2] != brick_stone) && (ba[i][2] != brick_risky))
                         objects.brick.nBricksLeft++;
                     ba[i] = bsLayer.appendChild(brickElem);
                 }
@@ -2999,7 +3002,7 @@ v\:* {
                     <li><b>Lives:</b> Here the number of your lives is displayed in the form of shapes of hearts (one heart for each life). At the beginning of the game, you have four lives. Whenever you lose a life, the shot stops moving, you hold the shot again, and you will have to throw it later. If the number of lives reaches zero, then the game will be over.</li>
                     <li><b>Score:</b> This section displays your score, which indicates how well you have played the game. Your score increases when the shot destroys a brick, or when you catch a prize. The details of how the game grants score will be discussed later in this guide.</li>
                     <li><b>Level:</b> This section displays the current level. In each level, there is a set of bricks that forms a particular shape such as a trapezoid, a tree, a fish, .etc. The game has ten levels, plus one bonus level.</li>
-                    <li><b>Buttons:</b> This section displays two buttons: the pause button – which pauses and resumes the game – and the exit button – which exits the game. Instead of clicking the exit button, you can press Alt+F4. Instead of clicking the pause button, you can press the key P to pause/resume the game.</li>
+                    <li><b>Buttons:</b> This section displays two buttons: the pause button  which pauses and resumes the game  and the exit button  which exits the game. Instead of clicking the exit button, you can press Alt+F4. Instead of clicking the pause button, you can press the key P to pause/resume the game.</li>
                 </ol>
                 
                 <h2>Bricks</h2>
@@ -3058,7 +3061,7 @@ v\:* {
                         <td>Risky Bricks</td>
                         <td>No bounce</td>
                         <td>Takes away 500 points</td>
-                        <td>These bricks are unlucky! If the shot hits them, the shot will stop moving, it will jump over the top of the PB, and you will have to throw it again. However, it is not possible to keep the shot from hitting this type of brick. These bricks first appear in level 8.</td>
+                        <td>These bricks are unlucky! If the shot hits them, the shot will stop moving, it will jump over the top of the PB, and you will have to throw it again. However, it is not possible to keep the shot from hitting this type of brick. These bricks first appear in level 6.</td>
                     </tr>
                 </table>
             </div>
@@ -3181,7 +3184,7 @@ v\:* {
                         ): If this bomb hits the PB, then if the Giant has some blood, its blood will increase 10%. Otherwise, 5 of the bricks that you have destroyed will reappear.
                     </li>
                 </ul>
-                <p>In level 10, there is also <i>a Boundary</i>, which is a red rectangle with a vertical line in the middle. If the PB normally crosses the middle line, the Giant's blood will increase 5%. So instead of crossing the middle line directly, you must place the PB on one part of the Boundary's rectangle, and then press the Arrow Up key (&#8593;) so that the PB will jump onto the other part. Don't worry – the Boundary will disappear as soon as the Giant's blood runs out; afterwards you can easily move the PB across the screen.</p>
+                <p>In level 10, there is also <i>a Boundary</i>, which is a red rectangle with a vertical line in the middle. If the PB normally crosses the middle line, the Giant's blood will increase 5%. So instead of crossing the middle line directly, you must place the PB on one part of the Boundary's rectangle, and then press the Arrow Up key (&#8593;) so that the PB will jump onto the other part. Don't worry  the Boundary will disappear as soon as the Giant's blood runs out; afterwards you can easily move the PB across the screen.</p>
                 
                 <h2>The passwords of the levels</h2>
                 <p>Since Brick Shooter has no feature for saving the game for technical reasons, the game provides a password for each of the levels. A password is an alphanumeric expression that consists of 10 characters, that uniquely identifies a level. To see the password of the current level, just pause the game by pressing the key P or clicking on the Pause Button on the status bar. Then the password will appear right in the center of the screen.</p>
