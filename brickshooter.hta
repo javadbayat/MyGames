@@ -108,7 +108,7 @@ v\:* {
     position: absolute;
 }
 
-#shot_object, #tubeBody_object, #tubeHead_object, #tick_object {
+#shot_object, #tubeBody_object, #tubeHead_object, #tick_object, #angleIndicator_object {
     z-index: 2;
     position: absolute;
 }
@@ -215,7 +215,7 @@ v\:* {
 </style>
 <hta:application ID="app"
     applicationname="Brick Shooter"
-    version="1.0"
+    version="1.1"
     caption="no"
     icon="images\icon.ico"
     showintaskbar="Yes"
@@ -230,13 +230,14 @@ v\:* {
     var myScreenW = 1024, myScreenH = 768, realScreenW = screen.width, realScreenH = screen.height;
     var gd = null;
     var left = 37, right = 39, up = 38, down = 40, NULL = 0, vague = -1;
+    var ctrl = 17;
     var currentLayer = null;
     var paused = false;
     var prize_heart = 0, prize_ultrasize = 1, prize_superPower = 2, prize_mouseControl = 3, prize_brickRemover = 4, prize_brickChanger = 5, prize_cover = 6;
     var brick_brown = 0, brick_green = 1, brick_bouncy = 2, brick_stone = 3, brick_strong = 4, brick_risky = 5;
     var level_bonus = 8;
     var gameInitialized = false;
-    var cv = "1.0", bt = new Date("Sat Jul 24 12:40:48 UTC+0430 2021");
+    var cv = "1.1", bt = new Date("Fri Jul 30 16:58:41 UTC+0430 2021");
     var lv, ie = null;
 
     var passwords = [
@@ -326,6 +327,14 @@ v\:* {
                 if (objects.boundary.on)
                     objects.boundary.jump();
                 break;
+            case ctrl :
+                if (objects.player.level != level_bonus)
+                {
+                    var playingPeriod = (new Date).valueOf() - objects.brick.levels[objects.player.level - 1].initDate;
+                    if (playingPeriod >= 240000)
+                        objects.shot.urgentThrow = 1;
+                }
+                break;
             }
         }, stopMoving:function() {
             switch (event.keyCode)
@@ -347,6 +356,22 @@ v\:* {
                     clearInterval(objects.player.rightInterval);
                     objects.player.currentDirection = NULL;
                 }
+                break;
+            case ctrl :
+                if (objects.shot.urgentThrow == 2)
+                {
+                    objects.player.unblock();
+                    clearInterval(objects.shot.intervalUT);
+                    objects.shot.intervalUT = NULL; //!!!
+                    angleIndicator.style.display = "none";
+                    
+                    objects.shot.setAngle(objects.shot.x = objects.player.x + objects.player.w / 2 - 10,
+                                objects.shot.y = 710,
+                                objects.shot.isGoodAngle ? objects.shot.angleUT : 360 - objects.shot.angle);
+                    objects.shot.interval = setInterval(objects.shot.nudge, objects.shot.ms);
+                }
+                
+                objects.shot.urgentThrow = 0;
                 break;
             }
         }, enableVagueCondition:function() {
@@ -484,7 +509,7 @@ v\:* {
             }
         }}, 
         pauseScreen:{pause:function() {
-            if ((!objects.player.currentDirection) && (!objects.cover.isMoving))
+            if ((!objects.player.currentDirection) && (!objects.cover.isMoving) && (!objects.shot.urgentThrow))
             {
                 document.onkeydown = document.onkeyup = document.onmousemove = null;
                 if (!objects.player.isHoldingShot)
@@ -603,6 +628,24 @@ v\:* {
                     switch (elemAhead.shotCollision)
                     {
                     case 1 : //Collision with player
+                        if (objects.shot.urgentThrow == 1)
+                        {
+                            clearInterval(objects.shot.interval);
+                            objects.shot.interval = NULL; //!!!
+                            objects.player.block();
+                            
+                            angleIndicator.coordsize = (objects.player.w + 60) + ", " + (objects.player.h + 60);
+                            angleIndicator.style.width = mapCoordX(objects.player.w + 60);
+                            angleIndicator.style.height = mapCoordY(objects.player.h + 60);
+                            angleIndicator.style.left = mapCoordX(objects.player.x - 30);
+                            angleIndicator.style.top = mapCoordY(objects.player.y - 30);
+                            
+                            objects.shot.distanceUT = 0;
+                            objects.shot.intervalUT = setInterval(objects.shot.nudgeUT, objects.shot.ms);
+                            objects.shot.urgentThrow = 2;
+                            return;
+                        }
+                        
                         if (y >= 720)
                             objects.shot.setAngle(x, y, (a <= 180) ? a + 180 : a - 180);
                         else
@@ -733,7 +776,6 @@ v\:* {
                             bombGroup.extraData.dInterval = setInterval("objects.bomb.nudge(" + (bombGroup.extraData.id) + ")", objects.bomb.ms);
                             bombGroup.extraData.status = 1;
                         }
-                        
                         break;
                     }
                 }
@@ -757,7 +799,41 @@ v\:* {
             objects.shot.basePointX = x;
             objects.shot.basePointY = y;
             objects.shot.distance = 0;
-        }, hasSuperPower:0, hasHitStone:0, nHitStone:0, isOnCover:false}, 
+        }, hasSuperPower:0, hasHitStone:0, nHitStone:0, isOnCover:false, nudgeUT:function() {
+            var x = objects.player.x - 30;
+            var y = objects.player.y - 30;
+            var w = objects.player.w + 60;
+            var h = objects.player.h + 60;
+            var p = getEllipsePremeter(w / 2, h / 2);
+            
+            var point = getPointOnEllipse(x, y, w / 2, h / 2, objects.shot.distanceUT);
+            shot.style.left = mapCoordX(point.x - 10);
+            shot.style.top = mapCoordY(point.y - 10);
+            
+            var a = Math.floor(w / 2);
+            var b = Math.floor(h / 2);
+            with (Math)
+            {
+                objects.shot.angleUT = atan((y + b - point.y) / (point.x - x - a)) * 180 / PI;
+                if (objects.shot.angleUT < 0)
+                    objects.shot.angleUT += 180;
+            }
+            if (((15 <= objects.shot.angleUT) && (objects.shot.angleUT <= 70)) || ((105 <= objects.shot.angleUT) && (objects.shot.angleUT <= 160)))
+            {
+                angleIndicator.style.display = "";
+                angleIndicator.path = "m " + a + "," + b + " l " + (point.x - x) + "," + (point.y - y) + " e";
+                objects.shot.isGoodAngle = true;
+            }
+            else
+            {
+                angleIndicator.style.display = "none";
+                objects.shot.isGoodAngle = false;
+            }
+            
+            objects.shot.distanceUT += objects.shot.pxUT;
+            if (objects.shot.distanceUT >= p / 2)
+                objects.shot.distanceUT = 0;
+        }, urgentThrow:0, intervalUT:NULL, distanceUT:0, angleUT:NULL, pxUT:1, isGoodAngle:false}, 
         brick:{nBricksLeft:NULL,  
             levels:[
             {brownBricks:[[62, 220], [122, 220], [182, 220], [242, 220], [302, 220], [662, 220], [722, 220], [782, 220], [842, 220], [902, 220], [482, 220],
@@ -773,6 +849,8 @@ v\:* {
                          [382, 80], [442, 100], [522, 100], [582, 80],
                          [362, 200], [422, 180], [482, 160], [542, 180], [602, 200], [362, 240], [422, 260], [482, 280], [542, 260], [602, 240]], 
             init:function() {
+                objects.brick.levels[0].initDate = (new Date).valueOf();
+                
                 var bsLayer = g("brickshooter_layer");
                 var bba = objects.brick.levels[0].brownBricks;
                 var gba = objects.brick.levels[0].greenBricks;
@@ -811,6 +889,8 @@ v\:* {
             }},
             {bricks:[[2, 130], [62, 130], [122, 130], [182, 130], [242, 130], [302, 130], [362, 130], [422, 130], [482, 130], [542, 130], [602, 130], [662, 130], [722, 130], [782, 130], [842, 130], [902, 130], [962, 130], [32, 110], [92, 110], [152, 110], [212, 110], [272, 110], [332, 110], [392, 110], [452, 110], [512, 110], [572, 110], [632, 110], [692, 110], [752, 110], [812, 110], [872, 110], [932, 110], [62, 90], [122, 90], [182, 90], [242, 90], [302, 90], [362, 90], [422, 90], [482, 90], [542, 90], [602, 90], [662, 90], [722, 90], [782, 90], [842, 90], [902, 90], [92, 70], [152, 70], [212, 70], [272, 70], [332, 70], [392, 70], [452, 70], [512, 70], [572, 70], [632, 70], [692, 70], [752, 70], [812, 70], [872, 70], [122, 50], [182, 50], [242, 50], [302, 50], [362, 50], [422, 50], [482, 50], [542, 50], [602, 50], [662, 50], [722, 50], [782, 50], [842, 50], [152, 30], [212, 30], [272, 30], [332, 30], [392, 30], [452, 30], [512, 30], [572, 30], [632, 30], [692, 30], [752, 30], [812, 30]],
             init:function() {
+                objects.brick.levels[1].initDate = (new Date).valueOf();
+                
                 var bsLayer = g("brickshooter_layer");
                 var ba = objects.brick.levels[1].bricks;
                 var setGreen = false;
@@ -843,6 +923,8 @@ v\:* {
                          [160, 130], [220, 130], [280, 130],
                          [220, 110], [220, 90], [220, 70]],
             init:function() {
+                objects.brick.levels[2].initDate = (new Date).valueOf();
+                
                 var bsLayer = g("brickshooter_layer");
                 var bba = objects.brick.levels[2].brownBricks;
                 var gba = objects.brick.levels[2].greenBricks;
@@ -898,6 +980,8 @@ v\:* {
                      [505, 280, 1, 80], [485, 260, 1, 80], [465, 240, 1, 80], [445, 220, 1, 80], [425, 200, 1, 80], [405, 180, 1, 85], [385, 160, 1], [445, 160, 1], [505, 140, 4], [485, 100, 4], [585, 120, 4], [525, 120, 4], [415, 140, 4], [385, 120, 1], [445, 120, 1, 80], [405, 100, 1, 80], [425, 80, 1],
                      [830, 230], [830, 210], [830, 250], [770, 190, 1], [770, 170, 1], [770, 150, 1], [890, 190, 1], [890, 170, 1], [890, 150, 1], [830, 130], [830, 110], [830, 90], [770, 70, 4], [770, 50, 4], [770, 30, 4], [890, 70, 4], [890, 50, 4], [890, 30, 4], [770, 270, 4], [770, 290, 4], [770, 310, 4], [890, 270, 4], [890, 290, 4], [890, 310, 4], [830, 330], [830, 350], [830, 370], [770, 390, 1], [770, 410, 1], [770, 430, 1], [890, 390, 1], [890, 410, 1], [890, 430, 1], [830, 450], [830, 470], [830, 490]],
             init:function() {
+                objects.brick.levels[3].initDate = (new Date).valueOf();
+                
                 var bsLayer = g("brickshooter_layer");
                 var ba = objects.brick.levels[3].bricks;
                 objects.brick.nBricksLeft = ba.length;
@@ -929,6 +1013,8 @@ v\:* {
                      [260, 220, 4], [320, 220, 1], [380, 220, 4], [440, 220, 1], [500, 220, 4, 90], [620, 160, 2],
                      [960, 350], [900, 330, 2], [840, 310, 1], [900, 290, 4], [960, 270], [900, 250, 2], [840, 230, 1], [900, 210, 4], [960, 190], [900, 170, 2], [840, 150, 1], [900, 130, 4], [960, 110]],
             init:function() {
+                objects.brick.levels[4].initDate = (new Date).valueOf();
+                
                 var bsLayer = g("brickshooter_layer");
                 var ba = objects.brick.levels[4].bricks;
                 objects.brick.nBricksLeft = ba.length;
@@ -964,6 +1050,8 @@ v\:* {
                      [860, 80, 0, 70], [840, 120, 0, 80], [780, 120], [840, 160, 0, 70], [780, 160], [720, 160], [840, 200], [780, 200], [720, 200], [660, 200], [800, 240, 0, 90], [740, 240], [680, 240], [620, 240], [800, 280, 0, 80], [740, 280], [680, 280], [620, 280], [560, 280], [800, 320, 0, 70], [740, 320], [680, 320], [620, 320], [560, 320],
                      [860, 350, 1], [800, 350, 1], [740, 350, 1], [680, 350, 1], [620, 350, 1], [800, 410, 1, 90], [740, 410, 1], [650, 410, 1, 90], [800, 450, 1], [740, 450, 1], [680, 450, 1], [740, 370, 1], [740, 390, 1], [740, 430, 1], [740, 470, 1], [740, 490, 1], [740, 510, 1]],
             init:function() {
+                objects.brick.levels[5].initDate = (new Date).valueOf();
+                
                 var bsLayer = g("brickshooter_layer");
                 var ba = objects.brick.levels[5].bricks;
                 objects.brick.nBricksLeft = 0;
@@ -1016,6 +1104,8 @@ v\:* {
                      [500, 260, 1], [560, 260, 1], [620, 260, 1], [680, 260, 1, 70], [500, 280, 1], [560, 280, 1], [620, 280, 1], [680, 280, 1, 70], [500, 300, 1], [560, 300, 1], [620, 300, 1], [680, 300, 3, 70], [500, 320, 3], [560, 320, 1], [620, 320, 1], [680, 320, 1, 70], [500, 340, 1, 30], [530, 340, 1], [590, 340, 1], [650, 340, 1, 70], [500, 360, 1, 70], [570, 360, 1], [630, 360, 1, 70], [500, 380, 1], [560, 380, 1], [620, 380, 1, 70],
                      [750, 260], [810, 260], [750, 280, 0, 70], [820, 280], [750, 300, 0, 80], [830, 300], [810, 320, 0, 90], [840, 340, 0, 70], [860, 360], [870, 380]], 
             init:function() {
+                objects.brick.levels[6].initDate = (new Date).valueOf();
+                
                 if (objects.player.mouseControlMode)
                 {
                     document.onmousemove = null;
@@ -1232,6 +1322,8 @@ v\:* {
             {bricks:[[160, 130, 3], [200, 130, 2], [240, 130, 2], [280, 130, 2], [320, 130, 2], [360, 130, 2], [400, 130, 2], [440, 130, 2], [480, 130, 3], [160, 150], [200, 150, 3], [240, 150, 2], [280, 150, 2], [320, 150, 2], [360, 150, 2], [400, 150, 2], [440, 150, 3], [480, 150, 1], [160, 170], [200, 170], [240, 170, 3], [280, 170, 2], [320, 170, 2], [360, 170, 2], [400, 170, 3], [440, 170, 1], [480, 170, 1], [160, 190], [200, 190], [240, 190], [280, 190, 3], [320, 190, 2], [360, 190, 3], [400, 190, 1], [440, 190, 1], [480, 190, 1], [160, 210], [200, 210], [240, 210], [280, 210], [320, 210, 3], [360, 210, 1], [400, 210, 1], [440, 210, 1], [480, 210, 1], [160, 230], [200, 230], [240, 230], [285, 230, 3], [355, 230, 3], [400, 230, 1], [440, 230, 1], [480, 230, 1], [160, 250], [200, 250], [240, 250], [280, 250], [320, 250, 5], [360, 250, 1], [400, 250, 1], [440, 250, 1], [480, 250, 1], [160, 270], [200, 270], [240, 270], [285, 270, 5], [355, 270, 5], [400, 270, 1], [440, 270, 1], [480, 270, 1], [160, 290], [200, 290], [240, 290], [280, 290], [320, 290, 5], [360, 290, 1], [400, 290, 1], [440, 290, 1], [480, 290, 1], [160, 310], [200, 310], [240, 310], [285, 310, 3], [355, 310, 3], [400, 310, 1], [440, 310, 1], [480, 310, 1], [160, 330], [200, 330], [240, 330], [280, 330], [320, 330, 3], [360, 330, 1], [400, 330, 1], [440, 330, 1], [480, 330, 1], [160, 350], [200, 350], [240, 350], [280, 350, 3], [320, 350, 4], [360, 350, 3], [400, 350, 1], [440, 350, 1], [480, 350, 1], [160, 370], [200, 370], [240, 370, 3], [280, 370, 4], [320, 370, 4], [360, 370, 4], [400, 370, 3], [440, 370, 1], [480, 370, 1], [160, 390], [200, 390, 3], [240, 390, 4], [280, 390, 4], [320, 390, 4], [360, 390, 4], [400, 390, 4], [440, 390, 3], [480, 390, 1], [160, 410, 3], [200, 410, 4], [240, 410, 4], [280, 410, 4], [320, 410, 4], [360, 410, 4], [400, 410, 4], [440, 410, 4], [480, 410, 3], [0, 270, 1], [40, 250, 1], [40, 270, 1], [40, 290, 1], [80, 230, 1], [80, 250, 1], [80, 270, 1], [80, 290, 1], [80, 310, 1], [120, 210, 1], [120, 230, 1], [120, 250, 1], [120, 270, 1], [120, 290, 1], [120, 310, 1], [120, 330, 1], [240, 110, 4], [280, 110, 4], [320, 110, 4], [360, 110, 4], [400, 110, 4], [260, 90, 4], [300, 90, 4], [340, 90, 4], [380, 90, 4], [280, 70, 4], [320, 70, 4], [360, 70, 4], [300, 50, 4], [340, 50, 4], [320, 30, 4], [520, 210], [520, 230], [520, 250], [520, 270], [520, 290], [520, 310], [520, 330], [560, 230], [560, 250], [560, 270], [560, 290], [560, 310], [600, 250], [600, 270], [600, 290], [640, 270], [240, 430, 2], [280, 430, 2], [320, 430, 2], [360, 430, 2], [400, 430, 2], [260, 450, 2], [300, 450, 2], [340, 450, 2], [380, 450, 2], [280, 470, 2], [320, 470, 2], [360, 470, 2], [300, 490, 2], [340, 490, 2], [320, 510, 2],
                      [730, 120, 1], [740, 100, 1], [750, 80, 1], [760, 60, 1], [780, 40, 1], [820, 30, 1], [860, 40, 1], [880, 60, 1], [890, 80, 1], [900, 100, 1], [910, 120, 1], [910, 140, 1], [900, 160, 1], [890, 180, 1], [880, 200, 1], [730, 140, 1], [740, 160, 1], [750, 180, 1], [760, 200, 1], [810, 160, 2, 60], [790, 100, 2, 30], [860, 100, 2, 30], [740, 220, 3], [780, 220, 4], [820, 220, 4], [860, 220, 4], [900, 220, 3], [740, 240, 4], [780, 240, 4], [820, 240, 4], [860, 240, 4], [900, 240, 4], [740, 260, 4], [780, 260, 4], [820, 260, 4], [860, 260, 4], [900, 260, 4], [740, 280, 4], [780, 280, 4], [820, 280, 4], [860, 280, 4], [900, 280, 4], [740, 300, 4], [780, 300, 4], [820, 300, 4], [860, 300, 4], [900, 300, 4], [740, 320, 4], [780, 320, 4], [820, 320, 4], [860, 320, 4], [900, 320, 4], [740, 340, 4], [780, 340, 4], [820, 340, 4], [860, 340, 4], [900, 340, 4], [740, 360, 4], [780, 360, 4], [820, 360, 4], [860, 360, 4], [900, 360, 4], [740, 380, 4], [780, 380, 4], [820, 380, 4], [860, 380, 4], [900, 380, 4], [740, 400, 3], [780, 400, 4], [820, 400, 4], [860, 400, 4], [900, 400, 3], [740, 420], [740, 440], [740, 460], [740, 480], [740, 500], [740, 520], [740, 540], [700, 540], [660, 540, 3], [740, 560, 3], [700, 560, 3], [660, 560, 3], [900, 420], [900, 440], [900, 460], [900, 480], [900, 500], [900, 520], [900, 540], [940, 540], [980, 540, 3], [900, 560, 3], [940, 560, 3], [980, 560, 3], [690, 220, 1, 50], [690, 240, 1], [690, 260, 1], [690, 280, 1], [690, 300, 1], [690, 320, 1], [690, 340, 1], [690, 360, 1], [690, 380, 1], [940, 220, 1, 50], [950, 240, 1], [950, 260, 1], [950, 280, 1], [950, 300, 1], [950, 320, 1], [950, 340, 1], [950, 360, 1], [950, 380, 1]],
             init:function() {
+                objects.brick.levels[8].initDate = (new Date).valueOf();
+                
                 objects.bonus.clearBricks();
                 var bsLayer = g("brickshooter_layer");
                 var ba = objects.brick.levels[8].bricks;
@@ -1306,6 +1398,8 @@ v\:* {
                      [734, 260], [784, 240, 3], [834, 220], [884, 200, 5], [834, 250, 4], [884, 240, 4], 
                      [734, 300], [784, 320, 3], [834, 340], [884, 360, 5], [834, 310, 4], [884, 320, 4]],
             init:function() {
+                objects.brick.levels[9].initDate = (new Date).valueOf();
+                
                 objects.brick.clearStones(objects.brick.levels[8].bricks);
                 var bsLayer = g("brickshooter_layer");
                 var ba = objects.brick.levels[9].bricks;
@@ -1359,6 +1453,8 @@ v\:* {
             }},
             {bricks:[], sticksOffset:212,
             init:function() {
+                objects.brick.levels[10].initDate = (new Date).valueOf();
+                
                 objects.brick.clearStones(objects.brick.levels[9].bricks);
                 darkness2.style.display = "none";
                 objects.cover.destroy(true);
@@ -2391,6 +2487,8 @@ v\:* {
         };
         helpButton.onclick = showHelp;
         
+        angleIndicator = g("angleIndicator_object");
+        
         objects.brick.levels[objects.player.level - 1].init();
         gameInitialized = true;
     }
@@ -2521,6 +2619,7 @@ v\:* {
     function clearAllIntervals()
     {
         clearInterval(objects.shot.interval);
+        clearInterval(objects.shot.intervalUT);
         clearInterval(objects.player.leftInterval);
         clearInterval(objects.player.rightInterval);
         clearInterval(objects.bonus.timerInterval);
@@ -2710,7 +2809,7 @@ v\:* {
                 }
                 else
                 {
-                    clearInterval(downloadQueue.interval);
+                    clearInterval(interval);
                     ie.Quit();
                     ie = null;
                     
@@ -2731,16 +2830,24 @@ v\:* {
         ie.Quit();
         ie = null;
         
-        for (var i = 0;i < downloadQueue.fileNames.length;i++)
+        try
         {
-            var ts = fso.OpenTextFile(downloadQueue.fileNames[i], 2, true);
-            ts.Write(downloadQueue.fileContents[i]);
-            ts.Close();
+            for (var i = 0;i < downloadQueue.fileNames.length;i++)
+            {
+                var ts = fso.OpenTextFile(downloadQueue.fileNames[i], 2, true);
+                ts.Write(downloadQueue.fileContents[i]);
+                ts.Close();
+            }
+            
+            g("newlyInstalledVersion").innerText = lv;
+            g("downloadUpdate_stage").style.display = "none";
+            g("restartGame_stage").style.display = "";
         }
-        
-        g("newlyInstalledVersion").innerText = lv;
-        g("downloadUpdate_stage").style.display = "none";
-        g("restartGame_stage").style.display = "";
+        catch (e)
+        {
+            g("downloadUpdate_stage").style.display = "none";
+            g("updateFailure_stage").style.display = "";
+        }
     }
     
     function abortDownloading()
@@ -2751,6 +2858,24 @@ v\:* {
         
         g("downloadUpdate_stage").style.display = "none";
         g("beginUpdate_stage").style.display = "";
+    }
+    
+    function getEllipsePremeter(a, b)
+    {
+        with (Math)
+        {
+            return floor(PI * sqrt(2 * (a * a + b * b)));
+        }
+    }
+    
+    function getPointOnEllipse(x, y, a, b, d)
+    {
+        with (Math)
+        {
+            var theta = 2 * d / sqrt(2 * (a * a + b * b));
+            return {x:floor(x + a + cos(theta) * a),
+                    y:floor(y + b - sin(theta) * b)};
+        }
     }
 </script>
 <script language="vbscript">
@@ -2854,6 +2979,7 @@ v\:* {
         
         <v:roundrect id="player_object" fillcolor="#f7c42b" strokecolor="#ff80ff" strokeweight="1.5pt" arcsize="0.5"></v:roundrect>
         <v:rect id="shot_object" fillcolor="#0080ff" strokecolor="#804040" strokeweight="0.5pt" />
+        <v:shape id="angleIndicator_object" strokecolor="red" strokeweight="2pt" filled="False" style="display:none;" />
 
         <v:group id="steeringWheel_object" coordsize="88, 72" style="position:absolute;z-index:1;display:none;">
             <v:line strokeweight="2.5pt" from="0, 72" to="55, 37" />
@@ -3203,6 +3329,7 @@ v\:* {
         <div id="aboutSection">
             <h1>Brick Shooter</h1>
             <p>This game is created by a single programmer named <b>Javad Bayat</b>, in 2021. At the time of creation, this game was the best game that Javad Bayat made. A lot of effort has been made to design 10 engaging levels for the game. The game is created in the hope that it will be enjoyed by many children, and it will be improved with periodic updates. So please be sure to let us know any issues or suggestions through our <a href="mailto:javad78905@gmail.com">email</a> or <a href="https://t.me/javad0bayat">Telegram account</a>.</p>
+            <p><a href="https://github.com/javadbayat/MyGames/blob/main/brickshooter.hta">View source code on GitHub!</a></p>
         </div>
         <div id="creditsSection">
         </div>
