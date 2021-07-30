@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <updateinfo>
-    <app name="brickshooter" latestversion="1.0" buildtime="Sat Jul 24 12:40:48 UTC+0430 2021">
-        <file name="brickshooter.hta" size="171352" contentprefix="%3C%21--%20brickshooter%20--%3E" />
+    <app name="brickshooter" latestversion="1.1" buildtime="Fri Jul 30 16:58:41 UTC+0430 2021">
+        <file name="brickshooter.hta" size="177444" contentprefix="%3C%21--%20brickshooter%20--%3E" />
     </app>
 </updateinfo>
