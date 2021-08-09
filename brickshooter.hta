@@ -215,7 +215,7 @@ v\:* {
 </style>
 <hta:application ID="app"
     applicationname="Brick Shooter"
-    version="1.1"
+    version="1.2"
     caption="no"
     icon="images\icon.ico"
     showintaskbar="Yes"
@@ -237,7 +237,7 @@ v\:* {
     var brick_brown = 0, brick_green = 1, brick_bouncy = 2, brick_stone = 3, brick_strong = 4, brick_risky = 5;
     var level_bonus = 8;
     var gameInitialized = false;
-    var cv = "1.1", bt = new Date("Fri Jul 30 16:58:41 UTC+0430 2021");
+    var cv = "1.2", bt = new Date("Mon Aug 9 15:55:25 UTC+0430 2021");
     var lv, ie = null;
 
     var passwords = [
@@ -804,14 +804,15 @@ v\:* {
             var y = objects.player.y - 30;
             var w = objects.player.w + 60;
             var h = objects.player.h + 60;
-            var p = getEllipsePremeter(w / 2, h / 2);
-            
-            var point = getPointOnEllipse(x, y, w / 2, h / 2, objects.shot.distanceUT);
-            shot.style.left = mapCoordX(point.x - 10);
-            shot.style.top = mapCoordY(point.y - 10);
+            var p = getEllipsePerimeter(w / 2, h / 2);
             
             var a = Math.floor(w / 2);
             var b = Math.floor(h / 2);
+            
+            var point = getPointOnEllipse(x + a, y + b, a, b, objects.shot.distanceUT);
+            shot.style.left = mapCoordX(point.x - 10);
+            shot.style.top = mapCoordY(point.y - 10);
+            
             with (Math)
             {
                 objects.shot.angleUT = atan((y + b - point.y) / (point.x - x - a)) * 180 / PI;
@@ -1604,7 +1605,7 @@ v\:* {
                     return;
                 
                 for (var i = 0;i < ba.length;i++)
-                    if (ba[i].extraData.type == brick_stone)
+                    if ((ba[i].extraData.type == brick_stone) || (ba[i].extraData.type == brick_risky))
                         ba[i].removeNode();
             }
         },
@@ -2860,7 +2861,7 @@ v\:* {
         g("beginUpdate_stage").style.display = "";
     }
     
-    function getEllipsePremeter(a, b)
+    function getEllipsePerimeter(a, b)
     {
         with (Math)
         {
@@ -2868,13 +2869,13 @@ v\:* {
         }
     }
     
-    function getPointOnEllipse(x, y, a, b, d)
+    function getPointOnEllipse(cx, cy, a, b, d)
     {
         with (Math)
         {
-            var theta = 2 * d / sqrt(2 * (a * a + b * b));
-            return {x:floor(x + a + cos(theta) * a),
-                    y:floor(y + b - sin(theta) * b)};
+            var theta = d * sqrt(2 / (a * a + b * b));
+            return {x:floor(cx + cos(theta) * a),
+                    y:floor(cy - sin(theta) * b)};
         }
     }
 </script>
@@ -3099,7 +3100,7 @@ v\:* {
     <div class="gameLayer" id="help_layer" style="display:none;">
         <div id="helpContent">
             <div style="display:none;">
-                <h1>Welcome to Brick Shooter!</h1>
+                <center><h1>Welcome to Brick Shooter!</h1></center>
                 <p>Brick Shooter is a lively game where you have to destroy all the bricks in each level using a blue square called &quot;the shot&quot;. You throw the shot to make it traverse the screen. Then whenever it hits a rectangular brick, that brick is destroyed (it disappears). After hitting the brick, the shot bounces. When the shot starts to descend, you must quickly move &quot;the player box&quot; towards the shot in order to catch it, or the shot will hit the bottom of the screen and you will lose one heart.</p>
                 <p>The game has four main elements: The player box, The shot, The status bar, The bricks</p>
                 
@@ -3120,6 +3121,11 @@ v\:* {
                     <v:roundrect fillcolor="#f7c42b" strokecolor="#ff80ff" strokeweight="1.5pt" arcsize="0.5" style="position:absolute;left:75;top:165;width:100;height:20;" />
                     <v:rect fillcolor="#0080ff" strokecolor="#804040" strokeweight="0.5pt" style="position:absolute;left:115;top:145;width:20;height:20;" />
                 </v:group>
+                
+                <h3>Urgent Throw Mode</h3>
+                <p>If you feel like the shot is just wandering around the screen and isn't hitting the bricks anymore, you can use Urgent Throw Mode (UT Mode). To enter UT Mode, hold down Ctrl Key and wait for the shot to hit the Player Box. After that, the shot will move around the PB in an elliptical path, meaning that you are in Urgent Throw Mode. Please note that UT Mode only works if 4 minutes has been passed since the current level was started.</p>
+                <p>In UT Mode, sometimes the Angle Indicator, which is a red line leading from the center of the PB to the center of the center of the shot, appears. And sometimes it disappears, meaning that you can't throw the shot in that angle. When it is present, if you release the Ctrl Key, the shot will move away at the angle indicated by the Angle Indicator, and you will get out of UT Mode.</p>
+                <p><b>Note:</b> It is highly recommended that you use UT Mode only in extreme cases. Otherwise the game becomes too easy.</p>
             </div>
             <div style="display:none;">
                 <h2>Status Bar</h2>
@@ -3128,7 +3134,7 @@ v\:* {
                     <li><b>Lives:</b> Here the number of your lives is displayed in the form of shapes of hearts (one heart for each life). At the beginning of the game, you have four lives. Whenever you lose a life, the shot stops moving, you hold the shot again, and you will have to throw it later. If the number of lives reaches zero, then the game will be over.</li>
                     <li><b>Score:</b> This section displays your score, which indicates how well you have played the game. Your score increases when the shot destroys a brick, or when you catch a prize. The details of how the game grants score will be discussed later in this guide.</li>
                     <li><b>Level:</b> This section displays the current level. In each level, there is a set of bricks that forms a particular shape such as a trapezoid, a tree, a fish, .etc. The game has ten levels, plus one bonus level.</li>
-                    <li><b>Buttons:</b> This section displays two buttons: the pause button  which pauses and resumes the game  and the exit button  which exits the game. Instead of clicking the exit button, you can press Alt+F4. Instead of clicking the pause button, you can press the key P to pause/resume the game.</li>
+                    <li><b>Buttons:</b> This section displays two buttons: the pause button - which pauses and resumes the game - and the exit button - which exits the game. Instead of clicking the exit button, you can press Alt+F4. Instead of clicking the pause button, you can press the key P to pause/resume the game.</li>
                 </ol>
                 
                 <h2>Bricks</h2>
@@ -3310,7 +3316,7 @@ v\:* {
                         ): If this bomb hits the PB, then if the Giant has some blood, its blood will increase 10%. Otherwise, 5 of the bricks that you have destroyed will reappear.
                     </li>
                 </ul>
-                <p>In level 10, there is also <i>a Boundary</i>, which is a red rectangle with a vertical line in the middle. If the PB normally crosses the middle line, the Giant's blood will increase 5%. So instead of crossing the middle line directly, you must place the PB on one part of the Boundary's rectangle, and then press the Arrow Up key (&#8593;) so that the PB will jump onto the other part. Don't worry  the Boundary will disappear as soon as the Giant's blood runs out; afterwards you can easily move the PB across the screen.</p>
+                <p>In level 10, there is also <i>a Boundary</i>, which is a red rectangle with a vertical line in the middle. If the PB normally crosses the middle line, the Giant's blood will increase 5%. So instead of crossing the middle line directly, you must place the PB on one part of the Boundary's rectangle, and then press the Arrow Up key (&#8593;) so that the PB will jump onto the other part. Don't worry - the Boundary will disappear as soon as the Giant's blood runs out; afterwards you can easily move the PB across the screen.</p>
                 
                 <h2>The passwords of the levels</h2>
                 <p>Since Brick Shooter has no feature for saving the game for technical reasons, the game provides a password for each of the levels. A password is an alphanumeric expression that consists of 10 characters, that uniquely identifies a level. To see the password of the current level, just pause the game by pressing the key P or clicking on the Pause Button on the status bar. Then the password will appear right in the center of the screen.</p>
